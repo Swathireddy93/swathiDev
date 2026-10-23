@@ -20,7 +20,7 @@ export const experience = {
     fadeOut: 0.35,
   },
   flight: { duration: 10.5, bayAt: 1.8, cityAt: 4.0, landingAt: 8.7 },
-  audio: { musicVolume: 0.35, jumpVolume: 0.85, landVolume: 0.7, duckTo: 0.45, duckHoldMs: 450, restoreMs: 500 },
+  audio: { musicStartSeconds: 45, musicEndSeconds: 242.364, musicVolume: 0.35, jumpVolume: 0.85, landVolume: 0.7, duckTo: 0.45, duckHoldMs: 450, restoreMs: 500 },
   journey: { firstYear: 2018, lastYear: 2026, hopMs: 3200 },
   loading: { minimumMs: 4000, completeHoldMs: 450 },
   assetsTimeoutMs: 12_000,

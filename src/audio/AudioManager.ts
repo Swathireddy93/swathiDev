@@ -51,6 +51,9 @@ export class AudioManager {
       const { src, loop } = cues[cue]
       sound = new Howl({
         src: [src], loop, volume: 0,
+        // Loop only the selected portion of the supplied track, including on replay.
+        sprite: cue === 'mountain' ? { portfolio: [experience.audio.musicStartSeconds * 1000,
+          (experience.audio.musicEndSeconds - experience.audio.musicStartSeconds) * 1000, true] } : undefined,
         // Stream the full music track; keep short effects on Web Audio.
         html5: cue === 'mountain', preload: true,
         onloaderror: () => {
@@ -89,7 +92,7 @@ export class AudioManager {
   private retryAfterUnlock(sound: Howl) {
     if (!this.active || this.state.muted || this.state.status !== 'error' || this.sounds.get('mountain') !== sound) return
     this.update({ status: 'loading', message: '' })
-    this.ambientId = sound.play(this.ambientId)
+    this.ambientId = sound.play(this.ambientId ?? 'portfolio')
   }
   /** Call directly inside a click/keyboard event, before any asynchronous work. */
   enable = () => {
@@ -111,7 +114,7 @@ export class AudioManager {
     }
     this.sounds.forEach((sound) => sound.mute(false))
     ambient.volume(this.state.volume)
-    if (!ambient.playing(this.ambientId)) this.ambientId = ambient.play(this.ambientId)
+    if (!ambient.playing(this.ambientId)) this.ambientId = ambient.play(this.ambientId ?? 'portfolio')
     else this.update({ status: 'playing' })
   }
   mute = () => {

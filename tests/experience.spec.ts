@@ -97,6 +97,7 @@ test('the automatic character, close-up, POV flight and rooftop arrival form one
   await expect(page.locator(sound)).toHaveAttribute('data-audio-status', 'playing')
   await expect(bubbles.getByRole('link', { name: 'Contact', exact: true })).toHaveCSS('opacity', '1')
   await expect(page.locator(sound)).toHaveAttribute('data-last-cue', 'bubble')
+  await expect(bubbles).toBeInViewport({ ratio: 1 })
   await page.screenshot({ path: info.outputPath('rooftop-bubbles.png') })
   expect(errors).toEqual([])
 })

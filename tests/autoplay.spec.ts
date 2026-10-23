@@ -6,6 +6,13 @@ test.use({ launchOptions: { ...config.use?.launchOptions,
 } })
 
 test('music actually plays while critical scene assets are still loading', async ({ page }) => {
+  await page.addInitScript(() => {
+    const play = HTMLMediaElement.prototype.play
+    HTMLMediaElement.prototype.play = function () {
+      if (this.src.includes('portfolio-background')) document.documentElement.dataset.musicStart = String(this.currentTime)
+      return play.call(this)
+    }
+  })
   let release!: () => void
   const held = new Promise<void>(resolve => { release = resolve })
   await page.route('**/assets/temporary/bay.png', async route => { await held; await route.continue() })
@@ -14,6 +21,7 @@ test('music actually plays while critical scene assets are still loading', async
     await expect(page.getByTestId('loading-screen')).toBeVisible()
     await expect(page.locator('.sound-controls')).toHaveAttribute('data-audio-status', 'playing')
     await expect(page.getByRole('button', { name: 'Mute sound' })).toBeVisible()
+    await expect(page.locator('html')).toHaveAttribute('data-music-start', '45')
   } finally { release() }
   await expect(page.locator('.sound-controls')).toHaveAttribute('data-last-cue', 'jump')
   await expect(page.locator('.sound-controls')).toHaveAttribute('data-last-cue', 'land')

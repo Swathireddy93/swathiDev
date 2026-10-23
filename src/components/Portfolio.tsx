@@ -4,9 +4,8 @@ import { profile, type Project } from '../content/portfolio'
 import { CaseStudy } from './CaseStudy'
 import { CareerJourney } from './CareerJourney'
 import { personalProjects } from '../content/personalProjects'
+import { OrbitalNavigation } from './OrbitalNavigation'
 import { CityBackdrop } from '../scenes/CityFlight'
-
-const destinations = [['About Me', 'about'], ['Experience', 'experience'], ['Projects', 'projects'], ['Experiments', 'experiments'], ['Contact', 'contact']] as const
 
 export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio: AudioManager; onReplay: () => void; reducedMotion: boolean; fallback: boolean }) {
   const [project, setProject] = useState<Project | null>(null)
@@ -14,16 +13,15 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
   return (
     <main id="portfolio" tabIndex={-1} data-testid="portfolio">
       <section className="portfolio-hero landing-hero" id="top" aria-labelledby="hero-title">
-        <div className="hero-art city-art" aria-hidden="true"><CityBackdrop /></div>
-        <div className="hero-shade" aria-hidden="true" />
+        <div className="city-panorama" aria-hidden="true"><CityBackdrop /></div>
         <div className="hero-copy landing-copy content-width">
-          <div className="hero-glass" onAnimationStart={(event) => { if (event.target === event.currentTarget && !reducedMotion) audio.cue('glass') }}>
+          <div className="hero-introduction" onAnimationStart={(event) => { if (event.target === event.currentTarget && !reducedMotion) audio.cue('glass') }}>
           <h1 id="hero-title" className="pixel">{profile.name}</h1>
           <p className="hero-role">{profile.title}</p>
           <p className="hero-description">From enterprise foundations in 2018 to connected systems and AI-assisted development in 2026.</p>
           <div className="hero-actions"><a className="button primary" href="#projects">Explore my journey <span aria-hidden="true">↗</span></a><a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">View résumé <span aria-hidden="true">↗</span></a></div>
           </div>
-          <nav className="bubble-navigation" aria-label="Explore portfolio">{destinations.map(([label, id], index) => <a className="navigation-bubble" onAnimationStart={(event) => { if (event.target === event.currentTarget && event.animationName === 'bubble-arrive' && !reducedMotion) audio.cue('bubble', index) }} href={`#${id}`} key={id} style={{ animationDelay: `${index * 80}ms` }}><span className="bubble-number" aria-hidden="true">0{index + 1}</span><span>{label}</span><span aria-hidden="true">↗</span></a>)}</nav>
+          <OrbitalNavigation audio={audio} reducedMotion={reducedMotion} />
         </div>
         <div className="hero-bottom content-width"><button type="button" onClick={onReplay} className="replay-button" disabled={reducedMotion}>{reducedMotion ? 'Reduced motion enabled' : '↻ Replay the introduction'}</button></div>
       </section>
