@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 
 export default defineConfig({
   testDir: './tests',
-  timeout: 35_000,
+  timeout: 60_000,
   expect: { timeout: 10_000 },
   fullyParallel: true,
   workers: 2,
@@ -16,7 +16,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     launchOptions: {
       executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || (existsSync('/usr/bin/chromium') ? '/usr/bin/chromium' : undefined),
-      args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'],
+      args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--autoplay-policy=user-gesture-required'],
     },
   },
   webServer: {

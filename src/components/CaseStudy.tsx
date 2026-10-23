@@ -8,7 +8,7 @@ export function CaseStudy({ project, onClose }: { project: Project | null; onClo
     else dialog.current?.close()
   }, [project])
   return (
-    <dialog className="case-study" ref={dialog} aria-labelledby="case-title" onClose={onClose} onCancel={onClose}
+    <dialog className="case-study" ref={dialog} aria-labelledby="case-title" onCancel={(event) => { event.preventDefault(); onClose() }}
       onKeyDown={(event) => {
         if (event.key !== 'Tab') return
         const controls = Array.from(event.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled), a[href], input:not(:disabled), [tabindex="0"]'))

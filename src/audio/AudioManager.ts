@@ -1,23 +1,31 @@
 import { Howl, Howler } from 'howler'
+import { experience } from '../config/experience'
 
-type Cue = 'mountain' | 'jump'
+type Cue = 'mountain' | 'jump' | 'land' | 'bubble' | 'glass'
 interface AudioState {
   muted: boolean
   volume: number
   status: 'idle' | 'loading' | 'playing' | 'muted' | 'error'
   message: string
+  lastCue: '' | 'jump' | 'land' | 'bubble' | 'glass'
 }
 const cues = {
-  mountain: { src: `${import.meta.env.BASE_URL}audio/temporary-mountain-ambient.wav`, loop: true },
+  mountain: { src: `${import.meta.env.BASE_URL}audio/portfolio-background.mp3`, loop: true },
   jump: { src: `${import.meta.env.BASE_URL}audio/temporary-jump.wav`, loop: false },
+  glass: { src: `${import.meta.env.BASE_URL}audio/glass-reveal.wav`, loop: false },
+  bubble: { src: `${import.meta.env.BASE_URL}audio/menu-bubble.wav`, loop: false },
+  land: { src: `${import.meta.env.BASE_URL}audio/temporary-land.wav`, loop: false },
 } satisfies Record<Cue, { src: string; loop: boolean }>
 
 export class AudioManager {
   private sounds = new Map<Cue, Howl>()
   private listeners = new Set<() => void>()
   private active = false
-  private state: AudioState = { muted: true, volume: 0.35, status: 'idle', message: '' }
+  private ambientId: number | undefined
+  private autoplayPending = false
+  private state: AudioState = { muted: true, volume: experience.audio.musicVolume, status: 'idle', message: '', lastCue: '' }
   private fadeTimer: ReturnType<typeof setTimeout> | undefined
+  private duckTimer: ReturnType<typeof setTimeout> | undefined
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -28,21 +36,45 @@ export class AudioManager {
     this.state = { ...this.state, ...next }
     this.listeners.forEach((listener) => listener())
   }
+  /** Preload short effects and register touch unlock before the first gesture. */
+  prepare = () => { this.sound('jump'); this.sound('land'); this.sound('bubble'); this.sound('glass') }
+  startOnLoad = () => {
+    this.autoplayPending = true
+    this.startPlayback()
+  }
+  resumeOnInteraction = () => {
+    if (this.autoplayPending) this.enable()
+  }
   private sound(cue: Cue) {
     let sound = this.sounds.get(cue)
     if (!sound) {
       const { src, loop } = cues[cue]
       sound = new Howl({
-        src: [src], loop, volume: 0, preload: true,
-        onloaderror: () => this.fail(cue),
-        onplayerror: () => this.fail(cue),
+        src: [src], loop, volume: 0,
+        // Stream the full music track; keep short effects on Web Audio.
+        html5: cue === 'mountain', preload: true,
+        onloaderror: () => {
+          sound?.unload()
+          this.sounds.delete(cue)
+          if (cue === 'mountain') this.ambientId = undefined
+          this.fail(cue)
+        },
+        onplayerror: () => {
+          if (cue === 'mountain' && this.autoplayPending) {
+            this.update({ muted: true, status: 'muted', message: '' })
+          } else this.fail(cue)
+        },
+        onunlock: () => {
+          if (cue === 'mountain' && sound) this.retryAfterUnlock(sound)
+        },
         onplay: () => {
           if (!this.active) { sound?.stop(); return }
           if (cue === 'mountain') {
+            this.autoplayPending = false
             sound?.mute(this.state.muted)
             sound?.fade(0, this.state.volume, 700)
-            this.update({ status: this.state.muted ? 'muted' : 'playing' })
-          }
+            this.update({ status: this.state.muted ? 'muted' : 'playing', message: '' })
+          } else this.update({ lastCue: cue })
         },
       })
       this.sounds.set(cue, sound)
@@ -50,48 +82,72 @@ export class AudioManager {
     return sound
   }
   private fail(cue: Cue) {
-    this.sounds.get(cue)?.stop()
-    if (cue === 'mountain') {
-      this.update({ muted: true, status: 'error', message: 'Sound couldn’t start. You can continue muted or try the sound control again.' })
+    if (cue === 'mountain' && this.active && !this.state.muted) {
+      this.update({ status: 'error', message: 'Sound couldn’t start. Tap the speaker to try again.' })
     }
+  }
+  private retryAfterUnlock(sound: Howl) {
+    if (!this.active || this.state.muted || this.state.status !== 'error' || this.sounds.get('mountain') !== sound) return
+    this.update({ status: 'loading', message: '' })
+    this.ambientId = sound.play(this.ambientId)
   }
   /** Call directly inside a click/keyboard event, before any asynchronous work. */
   enable = () => {
+    this.autoplayPending = false
+    this.startPlayback()
+  }
+  private startPlayback() {
     clearTimeout(this.fadeTimer)
+    clearTimeout(this.duckTimer)
     this.active = true
     this.update({ muted: false, status: 'loading', message: '' })
     const ambient = this.sound('mountain')
     this.sound('jump')
     // Howler creates its context above. Resuming here retains the user gesture.
-    if (Howler.ctx?.state === 'suspended') void Howler.ctx.resume().catch(() => this.fail('mountain'))
-    ambient.mute(false)
+    const context = Howler.ctx
+    // iOS may report "interrupted" as well as "suspended" after app switching.
+    if (context && context.state !== 'running' && context.state !== 'closed') {
+      void context.resume().then(() => this.retryAfterUnlock(ambient)).catch(() => this.fail('mountain'))
+    }
+    this.sounds.forEach((sound) => sound.mute(false))
     ambient.volume(this.state.volume)
-    if (!ambient.playing()) ambient.play()
+    if (!ambient.playing(this.ambientId)) this.ambientId = ambient.play(this.ambientId)
     else this.update({ status: 'playing' })
   }
   mute = () => {
+    this.autoplayPending = false
+    clearTimeout(this.duckTimer)
     this.sounds.forEach((sound) => sound.mute(true))
-    this.update({ muted: true, status: 'muted' })
+    this.sounds.get('mountain')?.volume(this.state.volume)
+    this.update({ muted: true, status: 'muted', message: '' })
   }
-  setVolume = (volume: number) => {
-    const value = Math.min(1, Math.max(0, volume))
-    this.sounds.forEach((sound, cue) => sound.volume(value * (cue === 'jump' ? 0.45 : 1)))
-    this.update({ volume: value })
-  }
-  cue = (cue: Cue) => {
-    if (!this.active || this.state.muted) return
+  cue = (cue: 'jump' | 'land' | 'bubble' | 'glass', index = 0) => {
+    if (!this.active || this.state.muted || this.state.status !== 'playing') return
     const sound = this.sound(cue)
-    sound.volume(this.state.volume * 0.45)
+    sound.mute(false)
+    sound.volume(cue === 'glass' ? 0.3 : cue === 'bubble' ? 0.55 : cue === 'jump' ? experience.audio.jumpVolume : experience.audio.landVolume)
+    if (cue === 'bubble') sound.rate(0.9 + index * 0.07)
     sound.play()
+    if (cue === 'bubble' || cue === 'glass') return
+    const ambient = this.sounds.get('mountain')
+    ambient?.fade(ambient.volume(), this.state.volume * experience.audio.duckTo, 80)
+    clearTimeout(this.duckTimer)
+    this.duckTimer = setTimeout(() => {
+      if (this.active && !this.state.muted) ambient?.fade(ambient.volume(), this.state.volume, experience.audio.restoreMs)
+    }, experience.audio.duckHoldMs)
   }
   fadeOut = (milliseconds = 500) => {
     clearTimeout(this.fadeTimer)
+    clearTimeout(this.duckTimer)
     this.sounds.forEach((sound) => sound.fade(sound.volume(), 0, milliseconds))
     this.fadeTimer = setTimeout(() => this.stop(), milliseconds)
   }
   stop = () => {
     clearTimeout(this.fadeTimer)
+    clearTimeout(this.duckTimer)
     this.active = false
+    this.autoplayPending = false
+    this.ambientId = undefined
     this.sounds.forEach((sound) => { sound.stop(); sound.mute(true) })
     this.update({ muted: true, status: 'idle', message: '' })
   }

@@ -229,6 +229,13 @@ def audio():
     pop=np.sin(2*np.pi*(350*t+700*t*t))*np.exp(-t*25)*np.sin(np.minimum(1,t/.015)*np.pi/2)*.13
     with wave.open(str(adir/'temporary-jump.wav'),'wb') as out:
         out.setnchannels(1);out.setsampwidth(2);out.setframerate(sr);out.writeframes((pop*32767).astype('<i2').tobytes())
-    print('Created original temporary ambient loop and soft jump cue.')
+    rng=random.Random(18);landing=[]
+    for i in range(int(sr*.18)):
+        t=i/sr;envelope=(1-math.exp(-t*220))*math.exp(-t*32)
+        value=envelope*(.65*math.sin(2*math.pi*(95*t-90*t*t))+.12*rng.uniform(-1,1))
+        landing.append(int(max(-1,min(1,value))*15000))
+    with wave.open(str(adir/'temporary-land.wav'),'wb') as out:
+        out.setnchannels(1);out.setsampwidth(2);out.setframerate(sr);out.writeframes(np.array(landing,dtype='<i2').tobytes())
+    print('Created original temporary ambient loop, jump cue and landing cue.')
 
 if __name__=='__main__':generate();audio()

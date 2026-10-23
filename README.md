@@ -1,14 +1,15 @@
-# SWATHI — a little perspective
+# SWATHI — an interactive career journey
 
-A working first milestone of Swathi Shivashankar Reddy’s pixel-art portfolio:
-real asset loading → layered mountain panorama → a front-facing character peeking
-over a ridge, blinking and jumping → a usable HTML portfolio. Optional original
-ambient audio begins only after a visitor chooses sound.
+Swathi Shivashankar Reddy's React/TypeScript pixel-art portfolio:
+asset loading with a four-second minimum reveal and a brief visible 100% hold → front-facing character peeking, blinking and jumping →
+camera close-up → first-person Bay/city flight → rooftop portfolio with bubble
+navigation → a selectable career journey from 2018 to 2026.
 
-**This is a prototype, not the completed cinematic journey.** The POV transition,
-flight between city buildings, rooftop landing, final artwork and final soundtrack
-are deliberately reserved for later milestones. The distant skyline is scenery;
-there is no city-flight implementation yet.
+The sequence is a functioning **prototype with temporary/procedural artwork**.
+The mountain uses layered Pixi sprites; the city uses a deterministic pixel canvas
+and perspective projection. It is a 2.5D treatment, not a geographically exact
+model of San Francisco. Final character likeness, production art and physical-device
+performance remain open for review. No Three.js or new rendering dependency was added.
 
 ## Run locally
 
@@ -51,8 +52,8 @@ npm run build -- --base=/swathiDev/
 npm run preview
 ```
 
-The deployment publishes the current first-milestone prototype with explicitly
-temporary artwork/audio. Final visuals and the city flight remain future work.
+The deployment publishes the current interactive prototype. Landscape/character art
+and short effects remain temporary; background music was supplied by the user.
 
 ```sh
 npm run typecheck
@@ -116,22 +117,26 @@ between React rendering and asynchronous renderer initialization.
 
 ```text
 src/
-  App.tsx                    loading / choice / playing / portfolio state
+  App.tsx                    loading / automatic character / flight / portfolio state
   config/experience.ts       world dimensions, camera, character, timings, session key
   assets/manifest.ts         replaceable layer URLs, identities and parallax depths
   assets/loadAssets.ts       cached critical loading, progress, timeouts, fallbacks
   hooks/                     asset lifecycle and reduced-motion preference
   scenes/MountainWorld.tsx   Pixi React scene graph and renderer lifecycle
+  scenes/CityFlight.tsx      interruptible flight and static rooftop backdrop
+  scenes/cityRenderer.ts     pixel city, perspective projection and deterministic buildings
   animation/camera.ts        responsive camera and portrait focus
   animation/SceneController.ts  GSAP timeline, stages, poses and cue events
   audio/AudioManager.ts      cue registry, gesture unlock, playback and cleanup
   components/               loading, sound, navigation, portfolio and case studies
-  content/portfolio.ts      résumé-backed projects, profile and contact links
+  content/portfolio.ts      six résumé-backed case studies, profile and links
+  content/career.ts         dated chapters, technologies and source limitations
+  components/CareerJourney.tsx  accessible year rail and cinematic chapter changes
   theme/                    five-color tokens, fonts, responsive UI and focus states
 public/
   assets/temporary/          eight separate layers, three character poses, poster
   assets/production/         reserved for later approved artwork
-  audio/                    original temporary ambient loop and jump cue
+  audio/                    user-supplied music and original temporary jump cue
   fonts/                    locally hosted Pixelify Sans / Inter subsets + OFL licenses
   swathi-reddy-resume.pdf    original supplied résumé
 scripts/generate_placeholders.py  optional, deterministic art and audio source
@@ -143,31 +148,60 @@ is skipped, disabled or unavailable. Content is HTML, never text painted into a
 canvas. The scene controller receives explicit bindings and completion/cue hooks;
 it does not know about project content or routing.
 
-### Loading and playback
+### Loading, camera and audio
 
-- Progress counts completed critical textures and font loads, including settled
-  failures; it does not pretend to measure bytes or insert a minimum delay.
-- Fonts and scene textures are local. Cached loading is reused on replay. Audio is
-  deferred until a sound interaction rather than blocking critical scene readiness.
-- A missing texture becomes an empty layer and a nonblocking notice. Loading has
-  a 12-second per-asset timeout. A failed loader or absent/lost WebGL falls back to
-  the static scenic portfolio; project content remains available.
-- With assets ready, visitors choose **Start with Sound** or **Continue Muted**.
-  The sound action creates/resumes Howler’s AudioContext directly inside the user
-  gesture. Playback errors are reported without blocking the muted route.
-- The configured intro is 10.5 seconds: slow camera glide, a head-first peek,
-  blink, playful jump, settle and fade into the portfolio. Timings are centralized.
-- **Skip intro** is available from the black loading screen. Completing or
-  skipping records a session flag. Reloading shows the portfolio; Replay resets
-  the scene with cached assets. Replay starts muted until sound is chosen again.
-- Reduced motion bypasses the animation, including when the preference changes
-  while playing. The camera intentionally frames the character on narrow screens.
-- The GSAP timeline is killed and the renderer unmounted on interruption. Audio
-  is stopped on skip/completion/replay and unloaded when the application unmounts.
+- Progress reflects actual critical textures and font loads; there is no fake delay.
+- Loading automatically enters the character sequence. There is no welcome card,
+  Play Intro gate, or sound-choice screen. A normal refresh starts the journey
+  again; Skip intro is always available, including during loading and flight.
+- The character faces the camera, peeks, jumps, lands, ducks and reappears. Jump
+  and landing effects play over the supplied MP3, with brief music ducking. The
+  camera approaches her face; she disappears at the POV transition and is absent
+  from the city flight. Motion and audio-mix settings are centralized in
+  `src/config/experience.ts`.
+- The flight lifts over Bay water, approaches a bridge and skyline, moves through
+  perspective-projected buildings and settles onto a roof. The total intro is
+  approximately 22 seconds after assets are ready, and can be interrupted anytime.
+- Uploaded music attempts playback during loading. HTML5 streaming avoids decoding
+  the full four-minute track into a Web Audio buffer. Browsers can still prohibit
+  audible playback before interaction. Expected autoplay rejection stays quiet;
+  the first click/Enter/Space retries, or the visitor can use the speaker icon.
+  Autoplay is attempted, not guaranteed or bypassed. Real file/load errors remain
+  visible and retryable.
+- The speaker is available during loading too. It is a single 48px icon toggle,
+  without a volume slider or cancel/X icon. Explicit mute cancels automatic retry.
+  Music continues into the portfolio and across replay; resources and timers are
+  released on unmount. Short jump/landing effects are preloaded and use Web Audio.
+- Reduced motion and absent WebGL open the semantic portfolio immediately with a
+  static city backdrop. Missing scene assets show a nonblocking notice. Critical
+  loads have a timeout; animation timelines pause when the page is hidden and are
+  disposed on interruption.
+
+### Time-based projects and experience
+
+The five bubble destinations are About Me, Experience, Projects, Experiments and
+Contact. Experience and Projects lead to the same career journey. The 2018–2026
+rail supports mouse/touch, Arrow keys, Home/End, previous/next, and an optional
+Play Timeline action. GSAP transitions the chapter and hops the selected marker;
+reduced motion keeps selection functional with those animations disabled.
+
+- **2018–2023:** the documented TCS/Citigroup tenure (Oct 2018–Mar 2024). Individual
+  annual project/tool dates are not provided. Those selections clearly share the
+  full tenure; Angular 13 is not assigned to 2018 or 2019.
+- **2024:** Vision IoT (Mar 2024–Jan 2025), HCLTech/Verizon.
+- **2025:** Vision IoT's final month, VBG Automation (Jan–Sep), Ecommerce Gateway
+  and the concurrent Contract Transparency project (Sep 2025–Jan 2026).
+- **2026:** Magna Billing (Jan onward), and the two projects ending in January.
+  GitHub Copilot with Claude/GPT is documented development practice. LLMs, retrieval
+  pipelines and vector databases are labeled learning/exploration. The existing
+  Magna ecosystem AI agent is not presented as an agent built by Swathi.
+
+All six case studies remain available within their years. Update career chapter
+content without modifying the camera or rendering code.
 
 ### Art, audio and performance tradeoffs
 
-The current original procedural art and synthesized audio are **temporary**.
+The current original procedural art and synthesized jump effect are **temporary**.
 They demonstrate the asset pipeline and motion, not final visual approval or a
 portrait likeness. They use the supplied five-color direction with controlled
 shade ramps, explicit pixel clusters and dithering. They are not pixelated photos.
@@ -193,12 +227,13 @@ python scripts/generate_placeholders.py
 
 This optional script needs Pillow and NumPy. Generated assets are checked in, so
 Python and those packages are not needed for `npm ci`, development or building.
-Font licenses are included beside the local font files. Audio has no commercial
-samples and requires no paid service; see `public/audio/README.md` for provenance.
+Font licenses are included beside the local font files. The background track was
+supplied by the user, and playback requires no paid audio service; see
+`public/audio/README.md` for provenance and encoding details.
 
 ## Portfolio content and accessibility
 
-Three case studies come directly from the supplied résumé. HCLTech is the employer
+Six case studies come directly from the supplied résumé. HCLTech is the employer
 and Verizon the client for Magna Billing and Ecommerce Gateway; TCS is the employer
 and Citigroup the client for mortgage modernization. The 90% test-coverage metric
 applies to **one mortgage workflow**, not the entire platform. No employer source
@@ -206,21 +241,26 @@ code, public demo URLs, immigration information or street address is invented or
 published. The email, LinkedIn and résumé link use supplied factual content.
 
 Navigation uses ordinary anchors. Controls support keyboard input, visible focus,
-mute and volume. Native modal dialogs support Escape, contain keyboard focus and
-restore focus to the opening project action. Audio is optional and off by default.
+and an icon-only mute toggle. Native modal dialogs support Escape, contain keyboard focus and
+restore focus to the opening project action. Audio is optional; expected browser
+autoplay blocking falls back to a muted speaker until interaction.
 
 ## Verification and next milestones
 
-The browser suite checks critical readiness/skip, the full muted sequence and
-distinct rendered peek/jump frames, sound playback after a user gesture, volume,
-mute, interruption and replay, session behavior, reduced motion, mobile layout,
-keyboard case studies, résumé/contact destinations, and missing-art/audio/WebGL
-fallbacks. `npm run build` includes the strict type check. No assertion or existing
-check was disabled to make this workflow pass.
+`npm run build` includes the strict type check. `npm run lint` checks all source.
+The browser suite exercises automatic character/camera/flight/landing, actual
+jump and landing play events, music during loading, blocked-autoplay recovery,
+muting, replay, timeline selection/keyboard/playback, six case-study dialogs,
+mobile layout/touch, reduced motion, résumé download and missing-art/audio/WebGL.
 
-Next, review the placeholder sequence and choose the final pixel scale, character
-design and landscape detail. Then implement the shoulder/POV transition (removing
-the character from view), controlled flight across the Bay and between buildings,
-rooftop arrival and additional licensed audio cues. Those are future milestones,
-not hidden behind a claim that the full journey is complete. Nothing is deployed
-publicly by the setup or build commands.
+The autoplay-permitted test checks actual playback without any click. The restricted
+browser tests simulate a `NotAllowedError` until a trusted click/key event, because
+Chromium's autoplay flag and automation activation do not reliably reproduce every
+mobile policy. Touchscreen Chromium uses an iPhone user agent; physical iOS Safari
+and Android verification remain necessary. Tests preserve the browser's TLS checks.
+
+Next visual review: refine character art, camera framing, city detail and timings.
+No build or test command commits, pushes or deploys anything. Protected Vercel
+Preview deployments are the current review workflow; production stays gated on
+an explicit publish instruction. The existing Pages workflow still deploys on
+pushes to main, so do not push main as a preview mechanism.

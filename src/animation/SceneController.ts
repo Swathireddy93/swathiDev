@@ -24,16 +24,18 @@ export class SceneController {
     this.dispose()
     const b = this.bindings
     const { timing: t, character: c, camera } = experience
-    Object.assign(b.camera, { x: camera.startX, y: 0, zoom: camera.startZoom })
+    Object.assign(b.camera, { x: camera.startX, y: 0, zoom: camera.startZoom, focus: 0 })
     b.character.position.set(c.x, c.hiddenY)
     b.character.scale.set(c.scale)
+    b.character.alpha = 0
     b.portrait.texture = b.poses.neutral
     const timeline = gsap.timeline({ onUpdate: b.onFrame, onComplete: b.onComplete })
     this.timeline = timeline
     timeline
       .call(() => b.onStage('mountains'), [], 0)
-      .to(b.camera, { x: camera.endX, zoom: camera.endZoom, duration: t.duration, ease: 'sine.inOut' }, 0)
+      .to(b.camera, { x: camera.endX, zoom: camera.endZoom, duration: t.approachAt, ease: 'sine.inOut' }, 0)
       .call(() => b.onStage('peeking'), [], t.peekAt)
+      .set(b.character, { alpha: 1 }, t.peekAt)
       .to(b.character, { y: c.peekY, duration: t.peekDuration, ease: 'power2.out' }, t.peekAt)
       .call(() => { b.portrait.texture = b.poses.blink }, [], t.blinkAt)
       .call(() => { b.portrait.texture = b.poses.neutral }, [], t.blinkAt + 0.14)
@@ -48,10 +50,19 @@ export class SceneController {
       .to(b.character, { y: c.landY, duration: t.jumpDown, ease: 'power2.in' }, t.jumpAt + t.jumpUp)
       .call(() => {
         b.portrait.texture = b.poses.neutral
+        b.audio.cue('land')
         b.onStage('settled')
       }, [], t.jumpAt + t.jumpUp + t.jumpDown)
       .to(b.character.scale, { x: c.scale * 1.04, y: c.scale * 0.96, duration: 0.12, yoyo: true, repeat: 1 }, t.jumpAt + t.jumpUp + t.jumpDown)
-      .call(() => { b.onFade(); b.audio.fadeOut(t.fadeOut * 1000) }, [], t.duration - t.fadeOut)
+      .call(() => b.onStage('peeking-again'), [], t.duckAt)
+      .to(b.character, { y: c.hiddenY + 40, duration: 0.45, ease: 'power2.in' }, t.duckAt)
+      .to(b.character, { y: c.landY, duration: 0.65, ease: 'back.out(1.2)' }, t.peekAgainAt)
+      .call(() => b.onStage('approaching'), [], t.approachAt)
+      .to(b.camera, { x: 0, y: 115, zoom: 3.8, focus: 1, duration: t.approachDuration, ease: 'power2.inOut' }, t.approachAt)
+      .call(() => b.onStage('pov'), [], t.povAt)
+      .to(b.character, { alpha: 0, duration: 0.25 }, t.povAt)
+      .to(b.camera, { zoom: 4.6, duration: t.duration - t.povAt, ease: 'power2.in' }, t.povAt)
+      .call(b.onFade, [], t.duration - t.fadeOut)
   }
   pause() { this.timeline?.pause() }
   resume() { this.timeline?.resume() }
