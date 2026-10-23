@@ -1,0 +1,18 @@
+@font-face { font-family: Pixelify; src: url('/fonts/pixelify.woff') format('woff'); font-style: normal; font-weight: 400 700; font-display: swap; }
+@font-face { font-family: Inter; src: url('/fonts/inter.woff') format('woff'); font-style: normal; font-weight: 100 900; font-display: swap; }
+:root {
+  --forest: #172522;
+  --teal: #456C68;
+  --plum: #77717A;
+  --amber: #B48B62;
+  --cream: #E8DFCB;
+  --muted: #B4BBAE;
+  --border: color-mix(in srgb, var(--teal) 60%, var(--forest));
+  --body: Inter, system-ui, sans-serif;
+  --pixel: Pixelify, ui-monospace, monospace;
+  --header-height: 92px;
+  font-family: var(--body);
+  color: var(--cream);
+  background: var(--forest);
+  font-synthesis: none;
+}
