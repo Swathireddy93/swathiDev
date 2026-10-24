@@ -9,7 +9,10 @@ test('music actually plays while critical scene assets are still loading', async
   await page.addInitScript(() => {
     const play = HTMLMediaElement.prototype.play
     HTMLMediaElement.prototype.play = function () {
-      if (this.src.includes('portfolio-background')) document.documentElement.dataset.musicStart = String(this.currentTime)
+      if (this.src.includes('portfolio-background')) {
+        document.documentElement.dataset.musicStart = String(this.currentTime)
+        document.documentElement.dataset.musicVolume = String(this.volume)
+      }
       return play.call(this)
     }
   })
@@ -22,6 +25,8 @@ test('music actually plays while critical scene assets are still loading', async
     await expect(page.locator('.sound-controls')).toHaveAttribute('data-audio-status', 'playing')
     await expect(page.getByRole('button', { name: 'Mute sound' })).toBeVisible()
     await expect(page.locator('html')).toHaveAttribute('data-music-start', '45')
+    expect(Number(await page.locator('html').getAttribute('data-music-volume'))).toBeGreaterThan(0)
+    await expect(page.locator('.sound-controls')).toHaveClass(/sound-is-on/)
   } finally { release() }
   await expect(page.locator('.sound-controls')).toHaveAttribute('data-last-cue', 'jump')
   await expect(page.locator('.sound-controls')).toHaveAttribute('data-last-cue', 'land')

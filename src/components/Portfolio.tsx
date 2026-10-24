@@ -5,11 +5,25 @@ import { CaseStudy } from './CaseStudy'
 import { CareerJourney } from './CareerJourney'
 import { personalProjects } from '../content/personalProjects'
 import { OrbitalNavigation } from './OrbitalNavigation'
+import { CharacterGuide } from './CharacterGuide'
+import { ThinkingCharacter } from './ThinkingCharacter'
 import { CityBackdrop } from '../scenes/CityFlight'
 
 export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio: AudioManager; onReplay: () => void; reducedMotion: boolean; fallback: boolean }) {
   const [project, setProject] = useState<Project | null>(null)
   const [year, setYear] = useState(2018)
+  const [selectedSection, setSelectedSection] = useState<string | null>(null)
+  const [sectionVisit, setSectionVisit] = useState(0)
+  const navigate = (section: string) => { setSelectedSection(section); setSectionVisit(value => value + 1) }
+  const guideKey = (section: string) => `${section}-${selectedSection === section ? sectionVisit : 0}`
+  const returnToMenu = () => {
+    setSelectedSection(null)
+    requestAnimationFrame(() => {
+      const menu = document.getElementById('portfolio-menu')
+      menu?.scrollIntoView({ block: 'center', behavior: reducedMotion ? 'instant' : 'smooth' })
+      menu?.focus({ preventScroll: true })
+    })
+  }
   return (
     <main id="portfolio" tabIndex={-1} data-testid="portfolio">
       <section className="portfolio-hero landing-hero" id="top" aria-labelledby="hero-title">
@@ -21,27 +35,39 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
           <p className="hero-description">From enterprise foundations in 2018 to connected systems and AI-assisted development in 2026.</p>
           <div className="hero-actions"><a className="button primary" href="#projects">Explore my journey <span aria-hidden="true">↗</span></a><a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">View résumé <span aria-hidden="true">↗</span></a></div>
           </div>
-          <OrbitalNavigation audio={audio} reducedMotion={reducedMotion} />
+          <OrbitalNavigation audio={audio} reducedMotion={reducedMotion} onNavigate={navigate} />
         </div>
         <div className="hero-bottom content-width"><button type="button" onClick={onReplay} className="replay-button" disabled={reducedMotion}>{reducedMotion ? 'Reduced motion enabled' : '↻ Replay the introduction'}</button></div>
       </section>
 
       <section id="experience" className="section projects-section content-width" aria-labelledby="projects-title"><div id="projects">
+        <CharacterGuide key={`${selectedSection === 'projects' ? 'projects' : 'experience'}-${sectionVisit}`} section={selectedSection === 'projects' ? 'projects' : 'experience'} onReturn={returnToMenu} reducedMotion={reducedMotion} />
         <CareerJourney year={year} onYearChange={setYear} onProject={setProject} reducedMotion={reducedMotion} />
       </div></section>
 
       <section id="about" className="section about-section content-width" aria-labelledby="about-title">
+        <CharacterGuide key={guideKey('about')} section="about" onReturn={returnToMenu} reducedMotion={reducedMotion} />
         <div><p className="eyebrow">02 / A LITTLE ABOUT ME</p><h2 id="about-title">Curiosity, with<br />a practical side.</h2><div className="about-pixel-mark" aria-hidden="true">{'{ }'}</div></div>
-        <div className="about-copy"><p>I’m Swathi, a full-stack developer and technical lead based in the Bay Area. I work where frontend architecture, enterprise workflows and backend systems meet.</p><p>My work spans React and TypeScript, micro-frontends, reusable design systems and Java/Spring Boot services. I enjoy turning a complicated workflow into something people can understand and use.</p><p>I also use AI-assisted development tools and am building foundational knowledge of LLMs, retrieval pipelines and vector databases.</p><a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">The full story, on my résumé ↗</a></div>
+        <div className="about-copy">
+          <p>I'm Swathi, a developer, a curious mind, and someone who loves turning ideas into things that actually exist.</p>
+          <p>My journey began with writing code to solve problems. Over the years, it evolved into designing systems, leading engineering teams, and understanding how technology connects people, processes, and experiences.</p>
+          <p>But somewhere along the way, I realized that building doesn't have to stop at work.</p>
+          <p>Sometimes it's an enterprise application. Sometimes it's a website born from an idea. Sometimes it's a tiny programmable accessory that started with a simple <em>"What if?"</em></p>
+          <p>Today, I'm exploring the space between engineering, design, and AI, where years of technical experience meet a new freedom to experiment.</p>
+          <p><strong>I believe the most interesting things happen when curiosity meets the ability to build.</strong></p>
+          <a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">The full story, on my résumé ↗</a>
+        </div>
       </section>
 
       <section id="career-summary" className="section content-width" aria-labelledby="experience-title">
+        <CharacterGuide key={guideKey('career-summary')} section="career-summary" onReturn={returnToMenu} reducedMotion={reducedMotion} />
         <div className="section-heading"><div><p className="eyebrow">03 / EMPLOYERS & CLIENTS</p><h2 id="experience-title">The teams behind the work.</h2></div></div>
         <div className="experience-row"><p className="experience-date">MAR 2024 — PRESENT</p><div><h3>Client: Verizon</h3><p>Senior Software Engineer / Technical Lead</p><span>HCLTech</span><a className="text-link experience-chapter-link" href="#projects" onClick={() => setYear(2024)}>Explore this chapter →</a></div><p>Operations platforms, federated frontends, reusable UI systems, automation and real-time IoT dashboards.</p></div>
         <div className="experience-row"><p className="experience-date">OCT 2018 — MAR 2024</p><div><h3>Client: Citigroup</h3><p>Web Developer, Full-Stack</p><span>TCS</span><a className="text-link experience-chapter-link" href="#projects" onClick={() => setYear(2018)}>Explore this chapter →</a></div><p>Mortgage application modernization, Angular SSR, enterprise API integration, accessibility and delivery across teams.</p></div>
       </section>
 
       <section id="experiments" className="section personal-projects-section content-width" aria-labelledby="experiments-title">
+        <CharacterGuide key={guideKey('experiments')} section="experiments" onReturn={returnToMenu} reducedMotion={reducedMotion} />
         <div className="section-heading"><div><p className="eyebrow">04 / INSIDE THE JOURNEY</p><h2 id="experiments-title">Ideas I brought to life.</h2></div><p>From daily rituals to wearable pixels.<br />Personal projects across web and hardware.</p></div>
         <div className="personal-project-grid">{personalProjects.map((item, index) => <article className={`personal-project personal-project-${item.id}`} key={item.id} aria-labelledby={`${item.id}-title`}>
           <div className="window-bar"><span>0{index + 1} / {item.id}</span><span className="window-controls" aria-hidden="true"><i /><i /></span></div>
@@ -49,14 +75,28 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
             <p className="eyebrow">{item.category}</p>
             <h3 id={`${item.id}-title`} className="pixel">{item.name}</h3>
             <p className="personal-tagline">{item.tagline}</p>
+            {item.repository && <div className="project-repository">
+              {item.repository.url ? <a className="button secondary" href={item.repository.url} target="_blank" rel="noreferrer"><span aria-hidden="true">&lt;/&gt;</span> {item.repository.label ?? 'GitHub repository'} ↗</a> : <>
+                <button className="button secondary repository-placeholder" type="button" disabled aria-describedby={`${item.id}-repo-status`}><span aria-hidden="true">&lt;/&gt;</span> GitHub repository</button>
+                <span id={`${item.id}-repo-status`} className="repository-status">LINK PENDING</span>
+              </>}
+            </div>}
             <p>{item.description}</p><p>{item.detail}</p>
             <p className="stack-label">BUILT WITH</p><div className="tags">{item.technologies.map(tool => <span key={tool}>{tool}</span>)}</div>
           </div>
         </article>)}</div>
+        <section className="github-projects" aria-labelledby="github-projects-title" id="github-projects">
+          <div className="window-bar"><span>GITHUB / WORKSPACE</span><span className="build-status"><i aria-hidden="true" />IN DEVELOPMENT</span></div>
+          <div className="github-projects-body">
+            <div className="github-projects-symbol pixel" aria-hidden="true">&gt;_</div>
+            <div><p className="eyebrow">GITHUB PROJECTS</p><h3 id="github-projects-title">Builds in progress.</h3><p>Experiments, practical tools and ideas taking shape. Selected repositories will appear here as they’re ready to share.</p></div>
+            <a className="text-link" href={profile.github} target="_blank" rel="noreferrer">Explore my GitHub ↗</a>
+          </div>
+        </section>
         <div className="portfolio-engineering"><div><span className="pixel">BEHIND THIS PORTFOLIO</span><p>Layered sprites, a perspective-projected city, synchronized sound cues and an interruptible camera timeline.</p></div><button type="button" className="button secondary" onClick={onReplay} disabled={reducedMotion}>{reducedMotion ? 'Motion respects your preferences' : 'Replay the journey →'}</button></div>
       </section>
 
-      <section id="contact" className="section contact-section content-width" aria-labelledby="contact-title"><p className="eyebrow">05 / LET’S CONNECT</p><h2 id="contact-title">What could we<br />build together?</h2><a className="contact-email" href={`mailto:${profile.email}`}>{profile.email}<span aria-hidden="true">↗</span></a><div className="contact-links"><a className="text-link" href={profile.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a><a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">Résumé ↗</a></div></section>
+      <section id="contact" className="section contact-section content-width" aria-labelledby="contact-title"><CharacterGuide key={guideKey('contact')} section="contact" onReturn={returnToMenu} reducedMotion={reducedMotion} /><p className="eyebrow">05 / LET’S CONNECT</p><div className="contact-scene"><h2 id="contact-title"><span>What could we</span><span>build together?</span></h2><ThinkingCharacter key={`thinker-${guideKey('contact')}`} reducedMotion={reducedMotion} /></div><a className="contact-email" href={`mailto:${profile.email}`}>{profile.email}<span aria-hidden="true">↗</span></a><div className="contact-links"><a className="text-link" href={profile.github} target="_blank" rel="noreferrer">GitHub ↗</a><a className="text-link" href={profile.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a><a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">Résumé ↗</a></div></section>
       <footer className="site-footer content-width"><span className="pixel">SWATHI / MADE WITH PERSPECTIVE</span><span>{fallback ? 'A quieter, static view.' : 'Early prototype · artwork in progress'}</span><a href="#top">Back to top ↑</a></footer>
       <CaseStudy project={project} onClose={() => setProject(null)} />
     </main>

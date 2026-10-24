@@ -1,4 +1,17 @@
-export const personalProjects = [
+import { profile } from './portfolio'
+
+export interface PersonalProject {
+  id: string
+  name: string
+  category: string
+  tagline: string
+  description: string
+  detail: string
+  technologies: readonly string[]
+  repository?: { url: string | null; label?: string }
+}
+
+export const personalProjects: readonly PersonalProject[] = [
   {
     id: 'ritual', name: 'Ritual', category: 'Web Application',
     tagline: 'A quiet archive of food, light, timing and evidence.',
@@ -7,6 +20,7 @@ export const personalProjects = [
     technologies: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'shadcn/ui', 'Framer Motion'],
   },
   {
+    repository: { url: profile.github, label: 'GitHub profile' },
     id: 'jada-bit', name: 'Jada.bit', category: 'Wearable Technology & Embedded Systems',
     tagline: 'Where wearable fashion meets programmable technology.',
     description: 'Designed and built a programmable digital hair accessory featuring a circular 1.28-inch LCD display powered by an ESP32-S3 microcontroller.',

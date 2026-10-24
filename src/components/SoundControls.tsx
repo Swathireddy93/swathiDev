@@ -6,7 +6,7 @@ export function SoundControls({ audio }: { audio: AudioManager }) {
   const soundOn = !state.muted && state.status !== 'error'
   const label = soundOn ? 'Mute sound' : 'Unmute sound'
   return (
-    <div className="sound-controls" data-audio-status={state.status} data-last-cue={state.lastCue}>
+    <div className={`sound-controls ${soundOn ? 'sound-is-on' : 'sound-is-off'}`} data-audio-status={state.status} data-last-cue={state.lastCue}>
       <button className="sound-toggle" type="button" onClick={soundOn ? audio.mute : audio.enable}
         aria-label={label} title={label} aria-pressed={soundOn} aria-busy={state.status === 'loading'}>
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">

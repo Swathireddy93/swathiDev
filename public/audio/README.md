@@ -25,3 +25,5 @@ in `src/audio/AudioManager.ts`; timing and mix levels live in `src/config/experi
 `glass-reveal.wav` is an original synthesized four-note pixel shimmer for the sage panel entrance. The menu cue is now a soft liquid pop, with gentle pitch variation per circle. Neither plays while muted or with reduced motion.
 
 Background music starts at 0:45 and loops from that point to the end of the supplied track (4:02.364). Mute/unmute preserves playback position.
+
+The returning menu character uses a quieter, lower-pitched variation of the original liquid pop on each peek. It does not duck the music and respects mute and reduced motion.

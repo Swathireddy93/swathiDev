@@ -10,6 +10,7 @@ export interface CareerChapter {
   projectIds: string[]
   note?: string
   exploration?: string[]
+  storyStep?: string
 }
 
 const enterprise: CareerChapter = {
@@ -21,8 +22,39 @@ const enterprise: CareerChapter = {
   projectIds: ['mortgage'],
 }
 
+// Six narrative perspectives on the same documented tenure, not dated releases.
+const citiStory = [
+  {
+    title: 'Mortgage Application Modernization',
+    summary: 'At TCS, I worked with Citigroup on modernizing enterprise mortgage applications. This is the project behind my first six timeline stops: one foundation viewed through the problem, my contribution, engineering decisions and delivery.',
+  },
+  {
+    title: 'What it meant for Citi.',
+    summary: 'Legacy mortgage workflows needed more accessible screens, maintainable architecture and dependable API integration. The work focused on modernizing the application experience while supporting the complexity of an enterprise mortgage platform.',
+  },
+  {
+    title: 'My role in the modernization.',
+    summary: 'I led the migration from client-side rendering to Angular 13 server-side rendering and redesigned workflows and application architecture. My contribution connected frontend modernization with the services and validation that mortgage workflows rely on.',
+  },
+  {
+    title: 'Connecting the workflow securely.',
+    summary: 'I integrated enterprise REST APIs with input validation, error handling and pagination. Angular security practices and DOM sanitization helped mitigate XSS risks as application workflows moved toward a more maintainable architecture.',
+  },
+  {
+    title: 'Making the experience work better.',
+    summary: 'I applied lazy loading, optimized change detection and memoization to improve application performance. Lighthouse, NVDA and axe supported accessibility and performance audits, keeping usability alongside the technical modernization.',
+  },
+  {
+    title: 'Quality, collaboration and recognition.',
+    summary: 'Jasmine and Karma supported unit testing, with 90% coverage achieved on one mortgage workflow. I coordinated with more than ten engineering, QA and product teams and received the TCS Star of the Sprint Award for the modernization work.',
+  },
+] as const
+
 export function chapterForYear(year: number): CareerChapter {
-  if (year <= 2023) return { ...enterprise, title: year === 2018 ? 'Where the journey begins.' : enterprise.title }
+  if (year <= 2023) {
+    const step = Math.max(0, year - 2018)
+    return { ...enterprise, ...citiStory[step], storyStep: `CITI STORY · ${String(step + 1).padStart(2, '0')} / 06` }
+  }
   if (year === 2024) return {
     title: 'From workflows to live systems.', period: 'Mar 2024 — Jan 2025', employer: 'HCLTech', client: 'Verizon',
     role: 'Senior Software Engineer / Technical Lead',

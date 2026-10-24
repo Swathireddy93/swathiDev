@@ -1,18 +1,19 @@
 import { Howl, Howler } from 'howler'
 import { experience } from '../config/experience'
 
-type Cue = 'mountain' | 'jump' | 'land' | 'bubble' | 'glass'
+type Cue = 'mountain' | 'jump' | 'land' | 'bubble' | 'glass' | 'peek'
 interface AudioState {
   muted: boolean
   volume: number
   status: 'idle' | 'loading' | 'playing' | 'muted' | 'error'
   message: string
-  lastCue: '' | 'jump' | 'land' | 'bubble' | 'glass'
+  lastCue: '' | 'jump' | 'land' | 'bubble' | 'glass' | 'peek'
 }
 const cues = {
   mountain: { src: `${import.meta.env.BASE_URL}audio/portfolio-background.mp3`, loop: true },
   jump: { src: `${import.meta.env.BASE_URL}audio/temporary-jump.wav`, loop: false },
   glass: { src: `${import.meta.env.BASE_URL}audio/glass-reveal.wav`, loop: false },
+  peek: { src: `${import.meta.env.BASE_URL}audio/menu-bubble.wav`, loop: false },
   bubble: { src: `${import.meta.env.BASE_URL}audio/menu-bubble.wav`, loop: false },
   land: { src: `${import.meta.env.BASE_URL}audio/temporary-land.wav`, loop: false },
 } satisfies Record<Cue, { src: string; loop: boolean }>
@@ -37,7 +38,7 @@ export class AudioManager {
     this.listeners.forEach((listener) => listener())
   }
   /** Preload short effects and register touch unlock before the first gesture. */
-  prepare = () => { this.sound('jump'); this.sound('land'); this.sound('bubble'); this.sound('glass') }
+  prepare = () => { this.sound('jump'); this.sound('land'); this.sound('bubble'); this.sound('glass'); this.sound('peek') }
   startOnLoad = () => {
     this.autoplayPending = true
     this.startPlayback()
@@ -124,14 +125,14 @@ export class AudioManager {
     this.sounds.get('mountain')?.volume(this.state.volume)
     this.update({ muted: true, status: 'muted', message: '' })
   }
-  cue = (cue: 'jump' | 'land' | 'bubble' | 'glass', index = 0) => {
+  cue = (cue: 'jump' | 'land' | 'bubble' | 'glass' | 'peek', index = 0) => {
     if (!this.active || this.state.muted || this.state.status !== 'playing') return
     const sound = this.sound(cue)
     sound.mute(false)
-    sound.volume(cue === 'glass' ? 0.3 : cue === 'bubble' ? 0.55 : cue === 'jump' ? experience.audio.jumpVolume : experience.audio.landVolume)
-    if (cue === 'bubble') sound.rate(0.9 + index * 0.07)
+    sound.volume(cue === 'peek' ? 0.24 : cue === 'glass' ? 0.3 : cue === 'bubble' ? 0.55 : cue === 'jump' ? experience.audio.jumpVolume : experience.audio.landVolume)
+    if (cue === 'bubble' || cue === 'peek') sound.rate(cue === 'peek' ? 0.72 + index * 0.025 : 0.9 + index * 0.07)
     sound.play()
-    if (cue === 'bubble' || cue === 'glass') return
+    if (cue === 'bubble' || cue === 'glass' || cue === 'peek') return
     const ambient = this.sounds.get('mountain')
     ambient?.fade(ambient.volume(), this.state.volume * experience.audio.duckTo, 80)
     clearTimeout(this.duckTimer)

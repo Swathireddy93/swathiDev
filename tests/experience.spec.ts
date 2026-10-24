@@ -270,3 +270,330 @@ test.describe('touchscreen journey', () => {
     } finally { release() }
   })
 })
+
+
+test('Citi has six distinct story stops with a shared toolset', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  const titles = new Set<string>()
+  let tools = ''
+  for (let year = 2018; year <= 2023; year++) {
+    await page.getByRole('tab', { name: String(year), exact: true }).click()
+    const chapter = page.locator('.chapter-story')
+    titles.add(await chapter.locator('h3').innerText())
+    await expect(chapter.locator('.story-step')).toContainText(`${String(year - 2017).padStart(2, '0')} / 06`)
+    const currentTools = await chapter.locator('.tags').innerText()
+    if (year === 2018) tools = currentTools
+    else expect(currentTools).toBe(tools)
+    await expect(page.locator('.citi-case-link')).toContainText('One project · six perspectives')
+  }
+  expect(titles.size).toBe(6)
+  await expect(page.locator('.chapter-story')).toContainText('90% coverage achieved on one mortgage workflow')
+})
+
+test('the monochrome guide peeks behind the menu in sequence and follows navigation', async ({ page }, info) => {
+  await skipToPortfolio(page)
+  const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
+  const about = menu.locator('[data-menu-guide="about"]')
+  await expect(about).toHaveClass(/is-peeking/)
+  await page.screenshot({ path: info.outputPath('menu-character-peek.png') })
+  await expect(about).not.toHaveClass(/is-peeking/)
+  await expect(menu.locator('[data-menu-guide="experience"]')).toHaveClass(/is-peeking/)
+  for (const [label, section] of [['About Me', 'about'], ['Experience', 'experience'], ['Projects', 'projects'], ['Experiments', 'experiments'], ['Contact', 'contact']]) {
+    await menu.getByRole('link', { name: label, exact: true }).click()
+    await expect(menu.locator('.is-peeking')).toHaveCount(0)
+    const guide = page.locator(`[data-guide-section="${section}"]`)
+    await expect(guide).toBeInViewport({ ratio: 1 })
+    await guide.getByRole('link', { name: 'Back to menu' }).click()
+    await expect(menu).toBeFocused()
+    await expect(menu).toBeInViewport({ ratio: 1 })
+  }
+})
+
+test('reduced motion keeps the returning guide still and all menu destinations accessible', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
+  await expect(menu.locator('[data-menu-guide="about"]')).toHaveClass(/is-peeking/)
+  expect(await menu.locator('[data-menu-guide="about"] .menu-pose-neutral').evaluate(image => getComputedStyle(image).filter)).toBe('none')
+  await menu.getByRole('link', { name: 'Contact', exact: true }).click()
+  await page.locator('[data-guide-section="contact"]').getByRole('link', { name: 'Back to menu' }).click()
+  await expect(menu).toBeFocused()
+})
+
+
+test('the menu character repeats all five destinations with a soft sound and respects mute', async ({ page }, info) => {
+  await skipToPortfolio(page)
+  const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
+  await expect(menu).toBeInViewport({ ratio: 1 })
+  const unmute = page.getByRole('button', { name: 'Unmute sound' })
+  if (await unmute.isVisible()) await unmute.click()
+  await expect(page.locator(sound)).toHaveAttribute('data-audio-status', 'playing')
+  for (const id of ['about', 'experience', 'projects', 'experiments', 'contact', 'about']) {
+    const peek = menu.locator(`[data-menu-guide="${id}"]`)
+    await expect(peek).toHaveClass(/is-peeking/)
+    await expect(peek.locator('.menu-peek-sprite')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)')
+    await expect(page.locator(sound)).toHaveAttribute('data-last-cue', 'peek')
+    if (id === 'contact') await page.screenshot({ path: info.outputPath('contact-peek.png') })
+    await expect(peek).not.toHaveClass(/is-peeking/)
+  }
+  await page.getByRole('button', { name: 'Mute sound' }).click()
+  await expect(menu.locator('[data-menu-guide="experience"]')).toHaveClass(/is-peeking/)
+  await expect(page.locator(sound)).toHaveAttribute('data-audio-status', 'muted')
+  await menu.getByRole('link', { name: 'About Me', exact: true }).click()
+  await expect(page.locator('[data-guide-section="about"]')).toBeInViewport({ ratio: 1 })
+  // Returning by ordinary scrolling must restart the guide too.
+  await menu.evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }))
+  await expect(menu.locator('[data-menu-guide="about"]')).toHaveClass(/is-peeking/)
+
+})
+
+test('About Me includes the supplied story with emphasis and the résumé link', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  const about = page.locator('#about .about-copy')
+  await expect(about.locator('p')).toHaveCount(6)
+  await expect(about).toContainText("I'm Swathi, a developer, a curious mind, and someone who loves turning ideas into things that actually exist.")
+  await expect(about.locator('em')).toHaveText('"What if?"')
+  await expect(about.locator('strong')).toHaveText('I believe the most interesting things happen when curiosity meets the ability to build.')
+  await expect(about.getByRole('link', { name: 'The full story, on my résumé' })).toHaveAttribute('href', /swathi-reddy-resume.pdf$/)
+})
+
+
+test('Experiments pairs the character with a looping warm idea bulb that pauses and restarts', async ({ page }, info) => {
+  await skipToPortfolio(page)
+  const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
+  await menu.getByRole('link', { name: 'Experiments', exact: true }).click()
+  const guide = page.locator('[data-guide-section="experiments"]')
+  const character = guide.locator('.character-idea')
+  const bulb = character.locator('.idea-bulb')
+  await expect(character).toHaveAttribute('data-motion-active', 'true')
+  await expect(guide.locator('.guide-actor')).toHaveCount(0)
+  await expect(bulb).toHaveCSS('opacity', '1')
+  await expect(character.locator('.figure-tada-arm')).toHaveCSS('rotate', '0deg')
+  await page.screenshot({ path: info.outputPath('idea-bulb-lit.png') })
+  // Returning to the dim state proves the full expression repeats.
+  await expect(bulb).toHaveCSS('opacity', '0.3')
+  await expect(character.locator('.figure-tada-arm')).toHaveCSS('rotate', '70deg')
+  await page.locator('#contact-title').scrollIntoViewIfNeeded()
+  await expect(character).toHaveAttribute('data-motion-active', 'false')
+  await expect(bulb).toHaveCSS('animation-play-state', 'paused')
+  await expect(character.locator('.figure-tada-arm')).toHaveCSS('animation-play-state', 'paused')
+  const paused = await bulb.evaluate(element => Number(element.getAnimations()[0].currentTime))
+  await page.waitForTimeout(350)
+  const stillPaused = await bulb.evaluate(element => Number(element.getAnimations()[0].currentTime))
+  expect(Math.abs(stillPaused - paused)).toBeLessThan(30)
+  await menu.evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }))
+  await menu.getByRole('link', { name: 'Experiments', exact: true }).click()
+  await expect(character).toHaveAttribute('data-motion-active', 'true')
+  const restarted = await bulb.evaluate(element => Number(element.getAnimations()[0].currentTime))
+  expect(restarted).toBeLessThan(1600)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await guide.scrollIntoViewIfNeeded()
+  await expect(character).toBeInViewport({ ratio: 1 })
+  expect((await guide.boundingBox())!.height).toBeLessThan(240)
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+  await page.screenshot({ path: info.outputPath('idea-bulb-mobile.png') })
+})
+
+test('the seated wave and expressions loop only in view and restart after a menu visit', async ({ page }) => {
+  await skipToPortfolio(page)
+  const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
+  await menu.getByRole('link', { name: 'About Me', exact: true }).click()
+  const rest = page.locator('.character-rest-scene')
+  const blink = rest.locator('.character-face-blink')
+  await expect(rest).toHaveAttribute('data-motion-active', 'true')
+  await expect(blink).toHaveCSS('animation-iteration-count', 'infinite')
+  await expect(rest.locator('.seated-wave')).toHaveCSS('animation-iteration-count', 'infinite')
+  await expect(rest.locator('.pixel-figure-head')).toHaveCSS('transform', 'none')
+  // Blinks last under 200 ms, so sample more often than the default assertion poll.
+  await expect.poll(() => blink.evaluate(element => getComputedStyle(element).opacity), { intervals: [50], timeout: 6000 }).toBe('1')
+  await expect(blink).toHaveCSS('opacity', '0')
+  await page.locator('#contact-title').scrollIntoViewIfNeeded()
+  await expect(rest).toHaveAttribute('data-motion-active', 'false')
+  await expect(blink).toHaveCSS('animation-play-state', 'paused')
+  await menu.evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }))
+  await menu.getByRole('link', { name: 'About Me', exact: true }).click()
+  await expect(rest).toHaveAttribute('data-motion-active', 'true')
+  const elapsed = await blink.evaluate(element => Number(element.getAnimations()[0].currentTime))
+  expect(elapsed).toBeLessThan(1600)
+})
+
+test('reduced motion keeps the idea bulb lit without animating the character', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  await page.getByRole('navigation', { name: 'Explore portfolio' }).getByRole('link', { name: 'Experiments', exact: true }).click()
+  const character = page.locator('.character-idea')
+  await expect(character.locator('.idea-bulb')).toHaveCSS('opacity', '1')
+  await expect(character.locator('.idea-bulb')).toHaveCSS('animation-name', 'none')
+  await expect(character.locator('.pixel-figure-head')).toHaveCSS('transform', 'none')
+})
+
+test('About Me has an upright seated wave and teams flex in place at four-second intervals', async ({ page }, info) => {
+  await skipToPortfolio(page)
+  const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
+  await expect(menu).toBeInViewport({ ratio: 1 })
+  await menu.getByRole('link', { name: 'About Me', exact: true }).click()
+  const rest = page.locator('[data-guide-section="about"]')
+  await expect(rest.locator('.character-rest-scene')).toBeInViewport({ ratio: 1 })
+  await page.screenshot({ path: info.outputPath('resting-at-table.png') })
+  const teams = page.locator('[data-guide-section="career-summary"]')
+  await teams.scrollIntoViewIfNeeded()
+  const character = teams.locator('.posing-character')
+  const before = await character.boundingBox()
+  await expect(character).toHaveAttribute('data-character-pose', 'flex')
+  await expect(character.locator('.rig-flex-arm').first()).toHaveCSS('opacity', '1')
+  await page.screenshot({ path: info.outputPath('teams-flex.png') })
+  await expect(character).toHaveAttribute('data-character-pose', 'neutral')
+  await expect(character).toHaveAttribute('data-pose-count', '2', { timeout: 6000 })
+  const after = await character.boundingBox()
+  expect(Math.abs(after!.x - before!.x)).toBeLessThan(1)
+  expect(Math.abs(after!.y - before!.y)).toBeLessThan(1)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await rest.scrollIntoViewIfNeeded()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+  await page.screenshot({ path: info.outputPath('resting-at-table-mobile.png') })
+})
+
+test('reduced motion leaves the Experience and team characters neutral', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  for (const section of ['experience', 'career-summary']) {
+    const character = page.locator(`[data-guide-section="${section}"] .posing-character`)
+    await character.scrollIntoViewIfNeeded()
+    await page.waitForTimeout(4200)
+    await expect(character).toHaveAttribute('data-character-pose', 'neutral')
+    await expect(character).toHaveAttribute('data-pose-count', '0')
+  }
+})
+
+test('Experience repeats a planted dab and restarts when opened from the menu', async ({ page }, info) => {
+  await skipToPortfolio(page)
+  const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
+  await menu.getByRole('link', { name: 'Experience', exact: true }).click()
+  const guide = page.locator('[data-guide-section="experience"]')
+  const character = guide.locator('.posing-character')
+  await expect(guide).toBeInViewport({ ratio: 1 })
+  // Measure within the guide, independent of the menu's smooth page scroll.
+  const plantedPosition = () => character.evaluate(element => {
+    const bounds = element.getBoundingClientRect()
+    const guideBounds = element.closest('.section-character-guide')!.getBoundingClientRect()
+    return { x: bounds.x - guideBounds.x, y: bounds.y - guideBounds.y }
+  })
+  const before = await plantedPosition()
+  await expect(character).toHaveAttribute('data-character-pose', 'dab')
+  await expect(character.locator('.rig-dab-arm').first()).toHaveCSS('opacity', '1')
+  await expect(character.locator('.rig-head')).not.toHaveCSS('transform', 'none')
+  const during = await plantedPosition()
+  expect(during.x).toBe(before.x)
+  expect(during.y).toBe(before.y)
+  await page.screenshot({ path: info.outputPath('experience-dab-desktop.png') })
+  await expect(character).toHaveAttribute('data-character-pose', 'neutral')
+  await expect(character).toHaveAttribute('data-pose-count', '2', { timeout: 6000 })
+  await guide.getByRole('link', { name: 'Back to menu' }).click()
+  await menu.getByRole('link', { name: 'Experience', exact: true }).click()
+  await expect(character).toHaveAttribute('data-pose-count', '0')
+  await page.setViewportSize({ width: 390, height: 844 })
+  await guide.scrollIntoViewIfNeeded()
+  await expect(character).toHaveAttribute('data-character-pose', 'dab')
+  await page.screenshot({ path: info.outputPath('experience-dab-mobile.png') })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+  await page.locator('#contact-title').scrollIntoViewIfNeeded()
+  await page.waitForTimeout(200)
+  const count = await character.getAttribute('data-pose-count')
+  await page.waitForTimeout(4200)
+  await expect(character).toHaveAttribute('data-pose-count', count!)
+})
+
+
+test('contact puts a smaller character right of a two-line invitation with working GitHub links', async ({ page }, info) => {
+  const errors: string[] = []
+  page.on('pageerror', error => errors.push(error.message))
+  page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  const profile = 'https://github.com/Swathireddy93/'
+  await expect(page.locator('.personal-project-jada-bit .project-repository a')).toHaveAttribute('href', profile)
+  await expect(page.locator('#github-projects a')).toHaveAttribute('href', profile)
+  await expect(page.locator('#contact').getByRole('link', { name: 'GitHub', exact: false })).toHaveAttribute('href', profile)
+  await page.locator('#contact-title').scrollIntoViewIfNeeded()
+  const verifyPortrait = async () => {
+    const portrait = page.locator('.thinking-figure')
+    await expect(portrait.locator('.character-glasses')).toBeVisible()
+    expect((await portrait.boundingBox())!.width).toBe(72)
+    const heading = page.locator('#contact-title')
+    await expect(heading.locator('span')).toHaveCount(2)
+    const lines = await heading.locator('span').evaluateAll(elements => elements.map(element => {
+      const range = document.createRange(); range.selectNodeContents(element)
+      return { lines: range.getClientRects().length, width: range.getBoundingClientRect().width, available: element.clientWidth }
+    }))
+    for (const line of lines) { expect(line.lines).toBe(1); expect(line.width).toBeLessThanOrEqual(line.available) }
+    const titleBox = await heading.boundingBox(), track = await page.locator('.thinking-character').boundingBox()
+    expect(track!.x).toBeGreaterThanOrEqual(titleBox!.x + titleBox!.width)
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+  }
+  await verifyPortrait()
+  await page.screenshot({ path: info.outputPath('contact-thinking.png') })
+  for (const width of [390, 320]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.locator('#contact-title').scrollIntoViewIfNeeded()
+    await verifyPortrait()
+    await page.screenshot({ path: info.outputPath(`contact-thinking-${width}.png`) })
+  }
+  expect(errors).toEqual([])
+})
+
+
+test('contact performs Bees Knees with planted feet, pauses offscreen and restarts from the menu', async ({ page }, info) => {
+  await skipToPortfolio(page)
+  const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
+  await menu.getByRole('link', { name: 'Contact', exact: true }).click()
+  const track = page.locator('.thinking-character')
+  const knee = track.locator('.bees-knee-left')
+  const arm = track.locator('.bees-arm-left')
+  const feet = track.locator('.bees-foot')
+  await expect(track).toHaveAttribute('data-motion-active', 'true')
+  const initialKnee = await knee.getAttribute('d'), initialArm = await arm.getAttribute('d')
+  const originalFeet = await feet.getAttribute('d')
+  await page.waitForTimeout(350)
+  expect(await knee.getAttribute('d')).not.toBe(initialKnee)
+  expect(await arm.getAttribute('d')).not.toBe(initialArm)
+  await expect(feet).toHaveAttribute('d', originalFeet!)
+  await page.screenshot({ path: info.outputPath('contact-bees-knees.png') })
+  await expect(track.locator('.question-one')).toHaveCSS('opacity', '1')
+  await page.locator('#about-title').scrollIntoViewIfNeeded()
+  await expect(track).toHaveAttribute('data-motion-active', 'false')
+  const paused = await knee.getAttribute('d')
+  await page.waitForTimeout(350)
+  await expect(knee).toHaveAttribute('d', paused!)
+  const oldInstance = await track.elementHandle()
+  await menu.evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }))
+  await menu.getByRole('link', { name: 'Contact', exact: true }).click()
+  await expect(track).toHaveAttribute('data-motion-active', 'true')
+  expect(await oldInstance!.evaluate(element => element.isConnected)).toBe(false)
+})
+
+test('mobile content shares reading margins and the opening name and role are centered', async ({ page }, info) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  for (const width of [320, 390, 700]) {
+    await page.setViewportSize({ width, height: 844 })
+    await page.locator('#hero-title').scrollIntoViewIfNeeded()
+    for (const selector of ['#hero-title', '.hero-role']) {
+      const center = await page.locator(selector).evaluate(element => {
+        const range = document.createRange(); range.selectNodeContents(element)
+        const box = range.getBoundingClientRect(); return box.x + box.width / 2
+      })
+      expect(Math.abs(center - width / 2)).toBeLessThan(2)
+    }
+    for (const id of ['experience', 'about', 'career-summary', 'experiments', 'contact']) {
+      const section = page.locator(`#${id}`)
+      await section.scrollIntoViewIfNeeded()
+      const bounds = (await section.boundingBox())!
+      expect(bounds.x).toBe(22)
+      expect(Math.round(bounds.x + bounds.width)).toBe(width - 22)
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+    await page.screenshot({ path: info.outputPath(`portfolio-mobile-${width}.png`), fullPage: true })
+  }
+})
