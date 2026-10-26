@@ -8,7 +8,7 @@ export function SoundControls({ audio }: { audio: AudioManager }) {
   const label = soundOn ? 'Mute sound' : 'Unmute sound'
   return (
     <div className={`sound-controls ${soundOn ? 'sound-is-on' : 'sound-is-off'}`} data-audio-status={state.status} data-last-cue={state.lastCue}>
-      {state.muted && !hintDismissed && state.status !== 'error' && <button type="button" className="sound-hint" onClick={() => { setHintDismissed(true); audio.enable() }}>Unmute for music</button>}
+      {state.muted && !hintDismissed && state.status !== 'error' && <button type="button" className="sound-hint" onClick={() => { setHintDismissed(true); audio.enable() }}>Unmute to play music</button>}
       <button className="sound-toggle" type="button" onClick={() => { setHintDismissed(true); if (soundOn) audio.mute(); else audio.enable() }}
         aria-label={label} title={label} aria-pressed={soundOn} aria-busy={state.status === 'loading'}>
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">

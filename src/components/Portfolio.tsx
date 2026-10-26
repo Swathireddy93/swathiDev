@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { AudioManager } from '../audio/AudioManager'
 import { profile, type Project } from '../content/portfolio'
 import { CaseStudy } from './CaseStudy'
@@ -9,19 +9,25 @@ import { OrbitalNavigation } from './OrbitalNavigation'
 import { CharacterGuide } from './CharacterGuide'
 import { ThinkingCharacter } from './ThinkingCharacter'
 import { CityBackdrop } from '../scenes/CityFlight'
+import { usePortfolioStory } from '../hooks/usePortfolioStory'
+import { MovieControls } from './MovieControls'
+import { menuPosition } from '../story/menuPosition'
 
 export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio: AudioManager; onReplay: () => void; reducedMotion: boolean; fallback: boolean }) {
   const [project, setProject] = useState<Project | null>(null)
   const [year, setYear] = useState(2018)
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [sectionVisit, setSectionVisit] = useState(0)
-  const navigate = (section: string) => { setSelectedSection(section); setSectionVisit(value => value + 1); if (section === 'experience' || section === 'projects') setYear(2018) }
+  const selectSection = useCallback((section: string) => { setSelectedSection(section); setSectionVisit(value => value + 1); if (section === 'projects') setYear(2018) }, [])
+  const story = usePortfolioStory({ reducedMotion: reducedMotion || fallback, navigate: selectSection, year: setYear })
+  const navigate = (section: string) => { story.pause(); selectSection(section) }
   const guideKey = (section: string) => `${section}-${selectedSection === section ? sectionVisit : 0}`
   const returnToMenu = () => {
+    story.pause()
     setSelectedSection(null)
     requestAnimationFrame(() => {
       const menu = document.getElementById('portfolio-menu')
-      menu?.scrollIntoView({ block: 'center', behavior: reducedMotion ? 'instant' : 'smooth' })
+      if (menu) window.scrollTo({ top: menuPosition(menu), behavior: reducedMotion ? 'instant' : 'smooth' })
       menu?.focus({ preventScroll: true })
     })
   }
@@ -36,15 +42,15 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
           <p className="hero-description">From enterprise foundations in 2018 to connected systems and AI-assisted development in 2026.</p>
           <div className="hero-actions"><a className="button primary" href="#projects">Explore my journey <span aria-hidden="true">↗</span></a><a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">View résumé <span aria-hidden="true">↗</span></a></div>
           </div>
-          <OrbitalNavigation audio={audio} reducedMotion={reducedMotion} onNavigate={navigate} />
+          <OrbitalNavigation audio={audio} reducedMotion={reducedMotion} onNavigate={navigate} storyActive={story.snapshot.status === 'waiting' || story.snapshot.status === 'playing'} storyPeek={story.snapshot.peek} />
         </div>
         <div className="hero-bottom content-width"><button type="button" onClick={onReplay} className="replay-button" disabled={reducedMotion}>{reducedMotion ? 'Reduced motion enabled' : '↻ Replay the introduction'}</button></div>
       </section>
 
-      <section id="experience" className="section projects-section content-width" aria-labelledby="projects-title"><div id="projects">
-        <CharacterGuide key={`${selectedSection === 'projects' ? 'projects' : 'experience'}-${sectionVisit}`} section={selectedSection === 'projects' ? 'projects' : 'experience'} onReturn={returnToMenu} reducedMotion={reducedMotion} />
-        <CareerJourney key={selectedSection === 'experience' || selectedSection === 'projects' ? `journey-${sectionVisit}` : 'journey'} year={year} onYearChange={setYear} onProject={setProject} reducedMotion={reducedMotion} dialogOpen={project !== null} />
-      </div></section>
+      <section id="projects" className="section projects-section content-width" aria-labelledby="projects-title">
+        <CharacterGuide key={guideKey('projects')} section="projects" onReturn={returnToMenu} reducedMotion={reducedMotion} />
+        <CareerJourney key={selectedSection === 'projects' ? `journey-${sectionVisit}` : 'journey'} year={year} onYearChange={setYear} onProject={item => { story.pause(); setProject(item) }} reducedMotion={reducedMotion} dialogOpen={project !== null} storyControlled={story.snapshot.status === 'playing'} onPauseStory={story.pause} />
+      </section>
 
       <section id="about" className="section about-section content-width" aria-labelledby="about-title">
         <CharacterGuide key={guideKey('about')} section="about" onReturn={returnToMenu} reducedMotion={reducedMotion} />
@@ -60,12 +66,12 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
         </div>
       </section>
 
-      <section id="career-summary" className="section content-width" aria-labelledby="experience-title">
-        <CharacterGuide key={guideKey('career-summary')} section="career-summary" onReturn={returnToMenu} reducedMotion={reducedMotion} />
+      <section id="experience" className="section content-width" aria-labelledby="experience-title"><div id="career-summary">
+        <CharacterGuide key={guideKey('experience')} section="experience" onReturn={returnToMenu} reducedMotion={reducedMotion} />
         <div className="section-heading"><div><p className="eyebrow">03 / EMPLOYERS & CLIENTS</p><h2 id="experience-title">The teams behind the work.</h2></div></div>
         <div className="experience-row"><p className="experience-date">MAR 2024 — PRESENT</p><div><h3>Client: Verizon</h3><p>Senior Software Engineer / Technical Lead</p><span>HCLTech</span><a className="text-link experience-chapter-link" href="#projects" onClick={() => setYear(2024)}>Explore this chapter →</a></div><p>Operations platforms, federated frontends, reusable UI systems, automation and real-time IoT dashboards.</p></div>
         <div className="experience-row"><p className="experience-date">OCT 2018 — MAR 2024</p><div><h3>Client: Citigroup</h3><p>Web Developer, Full-Stack</p><span>TCS</span><a className="text-link experience-chapter-link" href="#projects" onClick={() => setYear(2018)}>Explore this chapter →</a></div><p>Mortgage application modernization, Angular SSR, enterprise API integration, accessibility and delivery across teams.</p></div>
-      </section>
+      </div></section>
 
       <section id="experiments" className="section personal-projects-section content-width" aria-labelledby="experiments-title">
         <CharacterGuide key={guideKey('experiments')} section="experiments" onReturn={returnToMenu} reducedMotion={reducedMotion} />
@@ -99,6 +105,7 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
 
       <section id="contact" className="section contact-section content-width" aria-labelledby="contact-title"><CharacterGuide key={guideKey('contact')} section="contact" onReturn={returnToMenu} reducedMotion={reducedMotion} /><p className="eyebrow">05 / LET’S CONNECT</p><div className="contact-scene"><h2 id="contact-title"><span>What could we</span><span>build together?</span></h2><ThinkingCharacter key={`thinker-${guideKey('contact')}`} reducedMotion={reducedMotion} /></div><a className="contact-email" href={`mailto:${profile.email}`}>{profile.email}<span aria-hidden="true">↗</span></a><div className="contact-links"><a className="text-link" href={profile.github} target="_blank" rel="noreferrer">GitHub ↗</a><a className="text-link" href={profile.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a><a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">Résumé ↗</a></div></section>
       <footer className="site-footer content-width"><span className="pixel">SWATHI / MADE WITH PERSPECTIVE</span><span>{fallback ? 'A quieter, static view.' : 'Early prototype · artwork in progress'}</span><a href="#top">Back to top ↑</a></footer>
+      <MovieControls story={story.snapshot} onPause={story.pause} onPlay={story.play} />
       <CaseStudy project={project} onClose={() => setProject(null)} />
     </main>
   )

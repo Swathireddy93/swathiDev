@@ -11,6 +11,8 @@
   --body: Inter, system-ui, sans-serif;
   --pixel: Pixelify, ui-monospace, monospace;
   --header-height: 92px;
+  --story-top-gap: 24px;
+  --story-bottom-gap: 28px;
   font-family: var(--body);
   color: var(--cream);
   background: var(--forest);

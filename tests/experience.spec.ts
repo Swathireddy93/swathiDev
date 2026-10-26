@@ -25,6 +25,9 @@ async function skipToPortfolio(page: import('@playwright/test').Page) {
   await page.goto('/')
   await page.getByRole('button', { name: 'Skip intro' }).click()
   await expect(page.getByTestId('portfolio')).toBeVisible()
+  // These checks exercise manual exploration; automatic playback has its own suite.
+  await page.getByRole('button', { name: 'Pause the movie', exact: true }).click()
+  await page.locator('#portfolio-menu').evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }))
 }
 
 test('the supplied music supports byte-range streaming', async ({ request }) => {
@@ -442,7 +445,7 @@ test('About Me has an upright seated wave and teams flex in place at four-second
   const rest = page.locator('[data-guide-section="about"]')
   await expect(rest.locator('.character-rest-scene')).toBeInViewport({ ratio: 1 })
   await page.screenshot({ path: info.outputPath('resting-at-table.png') })
-  const teams = page.locator('[data-guide-section="career-summary"]')
+  const teams = page.locator('[data-guide-section="experience"]')
   await teams.scrollIntoViewIfNeeded()
   const character = teams.locator('.posing-character')
   const before = await character.boundingBox()
@@ -463,7 +466,7 @@ test('About Me has an upright seated wave and teams flex in place at four-second
 test('reduced motion leaves the Experience and team characters neutral', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
-  for (const section of ['experience', 'career-summary']) {
+  for (const section of ['projects', 'experience']) {
     const character = page.locator(`[data-guide-section="${section}"] .posing-character`)
     await character.scrollIntoViewIfNeeded()
     await page.waitForTimeout(4200)
@@ -472,11 +475,11 @@ test('reduced motion leaves the Experience and team characters neutral', async (
   }
 })
 
-test('Experience repeats a planted dab and restarts when opened from the menu', async ({ page }, info) => {
+test('the Projects timeline repeats a planted dab and restarts when opened from the menu', async ({ page }, info) => {
   await skipToPortfolio(page)
   const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
-  await menu.getByRole('link', { name: 'Experience', exact: true }).click()
-  const guide = page.locator('[data-guide-section="experience"]')
+  await menu.getByRole('link', { name: 'Projects', exact: true }).click()
+  const guide = page.locator('[data-guide-section="projects"]')
   const character = guide.locator('.posing-character')
   await expect(guide).toBeInViewport({ ratio: 1 })
   // Measure within the guide, independent of the menu's smooth page scroll.
@@ -500,7 +503,7 @@ test('Experience repeats a planted dab and restarts when opened from the menu', 
   await expect(character).toHaveAttribute('data-character-pose', 'neutral')
   await expect(character).toHaveAttribute('data-pose-count', '2', { timeout: 6000 })
   await guide.getByRole('link', { name: 'Back to menu' }).click()
-  await menu.getByRole('link', { name: 'Experience', exact: true }).click()
+  await menu.getByRole('link', { name: 'Projects', exact: true }).click()
   await expect(character).toHaveAttribute('data-pose-count', '0')
   await page.setViewportSize({ width: 390, height: 844 })
   await guide.scrollIntoViewIfNeeded()
@@ -611,7 +614,7 @@ test('mobile content shares reading margins and the opening name and role are ce
     })
     expect(descriptionLines).toBe(2)
     await expect(page.locator('.hero-role')).toHaveCSS('font-family', /monospace/)
-    for (const id of ['experience', 'about', 'career-summary', 'experiments', 'contact']) {
+    for (const id of ['projects', 'about', 'experience', 'experiments', 'contact']) {
       const section = page.locator(`#${id}`)
       await section.scrollIntoViewIfNeeded()
       const bounds = (await section.boundingBox())!
@@ -707,7 +710,7 @@ test('coffee steam rises in a loop and pauses when About Me leaves view', async 
 test('the timeline starts on entry, advances every three seconds and pauses for review', async ({ page }) => {
   await skipToPortfolio(page)
   const menu = page.getByRole('navigation', { name: 'Explore portfolio' })
-  await menu.getByRole('link', { name: 'Experience', exact: true }).click()
+  await menu.getByRole('link', { name: 'Projects', exact: true }).click()
   await expect(page.getByRole('tab', { name: '2018', exact: true })).toHaveAttribute('aria-selected', 'true')
   await expect(page.getByRole('button', { name: 'Pause timeline' })).toHaveAttribute('aria-pressed', 'true')
   await page.getByRole('button', { name: 'Read case study: Mortgage Application Modernization' }).click()
@@ -723,7 +726,7 @@ test('the timeline starts on entry, advances every three seconds and pauses for 
   await page.waitForTimeout(3300)
   await expect(page.getByRole('tabpanel')).toHaveAttribute('data-year', pausedYear!)
   await menu.evaluate(element => element.scrollIntoView({ block: 'center', behavior: 'instant' }))
-  await menu.getByRole('link', { name: 'Experience', exact: true }).click()
+  await menu.getByRole('link', { name: 'Projects', exact: true }).click()
   await expect(page.getByRole('tabpanel')).toHaveAttribute('data-year', '2018')
   await page.getByRole('tab', { name: '2024', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Play timeline' })).toHaveAttribute('aria-pressed', 'false')
@@ -731,7 +734,7 @@ test('the timeline starts on entry, advances every three seconds and pauses for 
 
 test('a blocked music start has a short unmute hint that disappears after use', async ({ page }) => {
   await page.goto('/')
-  const hint = page.getByRole('button', { name: 'Unmute for music', exact: true })
+  const hint = page.getByRole('button', { name: 'Unmute to play music', exact: true })
   await expect(hint).toBeVisible()
   await hint.click()
   await expect(page.locator('.sound-controls')).toHaveAttribute('data-audio-status', 'playing')

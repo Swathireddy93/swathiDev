@@ -1,5 +1,5 @@
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 115px; }
+html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-height) + var(--story-top-gap)); }
 body { margin: 0; min-width: 320px; }
 button, input, a { -webkit-tap-highlight-color: transparent; }
 button, input { font: inherit; }
@@ -168,8 +168,7 @@ h1,h2,h3,p { margin-top: 0; }
   .hero-copy { padding-top: 90px; }
 }
 @media (max-width: 700px) {
-  :root { --header-height: 78px; }
-  html { scroll-padding-top: 100px; }
+  :root { --header-height: 78px; --story-top-gap: 32px; --story-bottom-gap: 24px; }
   .content-width { width: calc(100% - 44px); }
   .site-header { padding-inline: 23px; gap: 14px; }
   .wordmark { font-size: 24px; }

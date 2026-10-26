@@ -1,9 +1,29 @@
 # SWATHI — an interactive career journey
 
 Swathi Shivashankar Reddy's React/TypeScript pixel-art portfolio:
-asset loading with a four-second minimum reveal and a brief visible 100% hold → first painted mountain frame → short pixel-block reveal → front-facing character peeking, blinking and jumping →
+asset loading with a four-second minimum reveal and a brief visible 100% hold → first painted mountain frame → half-second analog-TV tune-in → front-facing character peeking, blinking and jumping →
 camera close-up → first-person Bay/city flight → rooftop portfolio with bubble
 navigation → a selectable career journey from 2018 to 2026.
+
+## Development phases
+
+- Phase 1 established the application skeleton and cinematic scene architecture.
+- Phase 2 developed functionality, content, responsive design and the published portfolio.
+- Phase 3 uses motion to support the story. Changes in this phase remain in review previews until publication is requested.
+
+### Phase 3: portfolio in motion
+
+After the name, role and five circles settle into view, the movie holds for three seconds. The normal idle character loop yields to the movie: a single About Me hop leads straight into its content without re-centring the landing again. The sequence is **About Me → Experience → Projects → Beyond Work → Contact**. Later chapters return to the same landing frame, where the original colored character introduces the next destination. Experience targets the employers-and-clients section; Projects targets the career timeline. The existing `#career-summary` anchor remains available.
+
+`src/story/storyboard.ts` builds the sequence from the existing career data. Projects visibly plays every year from 2018–2026 with the camera held at the timeline. The rail follows each selected year horizontally on mobile, holding each year for three seconds after camera travel. The movie does not scroll through project cards or detailed content; visitors can explore those manually. After 2026 finishes, the movie returns to the menu and continues into Beyond Work. Detailed case studies remain available through the normal manual dialogs. Beyond Work includes Ritual, Jada.bit, photography and the GitHub workspace. The movie ends at Contact without looping the whole website.
+
+`StoryPlayer` owns a single animation-frame clock. Reading holds and scroll speed adapt to word count, section height and the viewport. It remeasures destinations as content changes, pauses its clock in background tabs and disposes all animation frames and event handlers on unmount. `usePortfolioStory` connects this controller to React and distinguishes visitor input from programmatic scrolling. The independent three-second timeline playback yields to the tour while it owns the project story.
+
+Wheel, touch, pointer or navigation-key input pauses automatic movement immediately. Sound controls remain usable without stopping the movie. One 18px play/pause icon sits 12px above the speaker's tap target, with no visible panel or persistent status text. A short “Pause the movie” hint appears at the first menu arrival. The same icon resumes or replays the movie; manual exploration never restarts automatically. The timeline's own pause button also pauses the movie, and only one clock owns year advancement. Reduced-motion preferences and the static graphics fallback keep manual navigation and omit automatic playback. Music still follows browser autoplay restrictions.
+
+Adjust the idle delay, travel time, reading pace and character hold in `experience.story`. The tests use Playwright's clock to verify the complete journey without speeding up the production experience. No new rendering library, backend or service is required.
+
+Landing and section camera targets share `storyViewport()`: at least 32px below the sticky header on mobile and 24px on desktop, with additional space when the landing frame fits. The landing reserves space for the movie hint so it does not cover the last circle on compact phones. Native anchor scrolling uses the same CSS tokens. Visual viewport bounds account for mobile browser chrome; an idle landing is reframed after an orientation/viewport change before its three-second hold restarts. Reading continues with the same protected top and bottom margins.
 
 The sequence is a functioning **prototype with temporary/procedural artwork**.
 The mountain uses layered Pixi sprites; the city uses a deterministic pixel canvas
@@ -310,8 +330,10 @@ Project cards use responsive, single-line headings and consistently white case-s
 
 Beyond Work includes the approved photography story and Instagram link after Jada.bit. `src/content/photography.ts` holds the content and image source; the original repository photo is `public/portfolioPicture.jpeg`, referenced through the Vite base URL. It keeps its natural proportions inside the circular crop, uses intrinsic dimensions, lazy loading and asynchronous decoding, and retains a fallback if loading fails.
 
-A short “Unmute for music” hint accompanies the speaker while initial playback is blocked. It disappears after enabling music and is dismissed on intentional speaker use.
+A short “Unmute to play music” hint accompanies the speaker while initial playback is blocked. It disappears after enabling music and is dismissed on intentional speaker use.
 
 The `>_` terminal decoration was removed from Builds in progress; the existing IN DEVELOPMENT label conveys its status without an unexplained symbol.
 
 The opening waits for both loaded assets and a painted mountain frame before removing the loader. A 500 ms analog-TV tune-in adds faint monochrome static, scanlines and horizontal tracking over the visible landscape. It clears automatically, never intercepts input and is omitted for reduced motion. Adjust `experience.loading.tvRevealMs` to change its duration without changing the cinematic timeline.
+
+The Contact guide has 24px padding on desktop and 20px on mobile, keeping its text and Back to menu link clear of both borders.

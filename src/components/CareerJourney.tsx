@@ -6,10 +6,10 @@ import { projects, type Project } from '../content/portfolio'
 
 const years = Array.from({ length: experience.journey.lastYear - experience.journey.firstYear + 1 }, (_, i) => experience.journey.firstYear + i)
 
-export function CareerJourney({ year, onYearChange, onProject, reducedMotion, dialogOpen }: {
-  year: number; onYearChange: (year: number) => void; onProject: (project: Project) => void; reducedMotion: boolean; dialogOpen: boolean
+export function CareerJourney({ year, onYearChange, onProject, reducedMotion, dialogOpen, storyControlled, onPauseStory }: {
+  year: number; onYearChange: (year: number) => void; onProject: (project: Project) => void; reducedMotion: boolean; dialogOpen: boolean; storyControlled: boolean; onPauseStory: () => void
 }) {
-  const [playing, setPlaying] = useState(true)
+  const [playing, setPlaying] = useState(!storyControlled)
   const [inView, setInView] = useState(false)
   const [pageVisible, setPageVisible] = useState(!document.hidden)
   const panel = useRef<HTMLDivElement>(null)
@@ -17,7 +17,7 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
   const buttons = useRef<Record<number, HTMLButtonElement | null>>({})
   const chapter = chapterForYear(year)
   const visibleProjects = chapter.projectIds.map(id => projects.find(project => project.id === id)).filter((project): project is Project => !!project)
-  const playEnabled = playing && !reducedMotion
+  const playEnabled = !reducedMotion && (playing || storyControlled)
 
   useEffect(() => {
     const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting && entry.intersectionRatio >= .5), { threshold: .5 })
@@ -38,13 +38,13 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
   }, [year, reducedMotion])
 
   useEffect(() => {
-    if (!playEnabled || !inView || !pageVisible || dialogOpen) return
+    if (storyControlled || !playEnabled || !inView || !pageVisible || dialogOpen) return
     const timer = window.setTimeout(() => {
       if (year < experience.journey.lastYear) onYearChange(year + 1)
       else setPlaying(false)
     }, experience.journey.hopMs)
     return () => window.clearTimeout(timer)
-  }, [playEnabled, inView, pageVisible, dialogOpen, year, onYearChange])
+  }, [storyControlled, playEnabled, inView, pageVisible, dialogOpen, year, onYearChange])
 
   useEffect(() => {
     const button = buttons.current[year]
@@ -67,6 +67,7 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
     <div className="journey-controls">
       <span className="pixel">MY TECH STORY</span>
       <button type="button" className="timeline-play" disabled={reducedMotion} aria-pressed={playEnabled} onClick={() => {
+        if (storyControlled) { onPauseStory(); setPlaying(false); return }
         if (!playing && year === years.at(-1)) onYearChange(years[0])
         setPlaying(!playing)
       }}>{playEnabled ? 'Pause timeline' : 'Play timeline'} <span aria-hidden="true">{playEnabled ? 'Ⅱ' : '▷'}</span></button>

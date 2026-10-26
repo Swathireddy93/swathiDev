@@ -405,10 +405,11 @@
   .coffee-steam .steam-wisp { animation: none; opacity: .4; }
 }
 
-.section-character-guide[data-guide-section="contact"] { display: flex; flex-wrap: wrap; gap: 12px 24px; }
+.section-character-guide[data-guide-section="contact"] { display: flex; flex-wrap: wrap; gap: 12px 24px; padding: 24px; }
 .section-character-guide[data-guide-section="contact"] p { flex: 1 1 240px; margin: 0; }
 .section-character-guide[data-guide-section="contact"] .guide-back { margin: 0 0 0 auto; }
 @media (max-width: 700px) {
+  .section-character-guide[data-guide-section="contact"] { padding: 20px; }
   .section-character-guide[data-guide-section="contact"] .guide-back { margin-left: 0; }
 }
 
@@ -514,3 +515,22 @@
 }
 @keyframes tv-tracking-roll { 0% { translate: 0 -8%; } 25% { translate: 0 4%; } 50% { translate: 0 -2%; } 75%, 100% { translate: 0 12%; } }
 @media (prefers-reduced-motion: reduce) { .tv-scene-reveal { display: none; } }
+
+/* Phase 3: one quiet movie icon above the existing speaker, with no panel. */
+.movie-controls { position: fixed; z-index: 30; right: 30px; bottom: calc(max(22px, env(safe-area-inset-bottom)) + 56px); color: var(--cream); }
+.movie-toggle { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: transparent; }
+.movie-toggle:hover { opacity: .75; }
+.movie-hint { position: absolute; right: 52px; top: 50%; transform: translateY(-50%); white-space: nowrap; font-size: 11px; line-height: 1.4; text-shadow: 0 1px 3px #000; }
+.phase-portfolio .audio-message { bottom: 112px; }
+.orbital-link.is-story-destination { outline: 1px solid #eee9; outline-offset: 7px; box-shadow: 0 0 22px #ffffff14; }
+@media (max-width: 700px) {
+  .movie-controls { right: 16px; bottom: calc(max(15px, env(safe-area-inset-bottom)) + 56px); }
+}
+@media (max-width: 360px) and (max-height: 800px) {
+  .orbital-slot, .orbital-link.navigation-bubble { width: 80px; }
+  .landing-copy .orbital-navigation { margin-top: 20px; }
+  .orbital-navigation { column-gap: 16px; row-gap: 50px; }
+  .orbital-label { font-size: 9px; }
+  .orbital-world { height: 40px; }
+  .orbital-model { top: 3px; scale: .65; }
+}

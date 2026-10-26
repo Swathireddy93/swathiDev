@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { experience } from '../config/experience'
 import type { AudioManager } from '../audio/AudioManager'
+import { menuPosition } from '../story/menuPosition'
 
 const destinations = [
   { label: 'About Me', id: 'about', pixels: ['000111100000','001111110000','001111110000','000111100000','000011000000','001111110000','011111111000','111111111100','110000001100'] },
@@ -10,8 +11,9 @@ const destinations = [
   { label: 'Contact', id: 'contact', pixels: ['111111111111','110000000011','101000000101','100100001001','100010010001','100001100001','100000000001','100000000001','111111111111'] },
 ] as const
 
-export function OrbitalNavigation({ audio, reducedMotion, onNavigate }: { audio: AudioManager; reducedMotion: boolean; onNavigate: (id: string) => void }) {
+export function OrbitalNavigation({ audio, reducedMotion, onNavigate, storyActive, storyPeek }: { audio: AudioManager; reducedMotion: boolean; onNavigate: (id: string) => void; storyActive: boolean; storyPeek: string | null }) {
   const navigation = useRef<HTMLElement>(null)
+  const arrivalHandled = useRef(false)
   const [inView, setInView] = useState(false)
   const [pageVisible, setPageVisible] = useState(!document.hidden)
   const [peek, setPeek] = useState({ index: 0, visible: false })
@@ -24,7 +26,7 @@ export function OrbitalNavigation({ audio, reducedMotion, onNavigate }: { audio:
   }, [])
   const guiding = inView && pageVisible
   useEffect(() => {
-    if (!guiding || reducedMotion) return
+    if (!guiding || reducedMotion || storyActive) return
     let index = 0
     let visible = false
     let timer: ReturnType<typeof setTimeout>
@@ -46,13 +48,22 @@ export function OrbitalNavigation({ audio, reducedMotion, onNavigate }: { audio:
       timer = setTimeout(next, experience.guide.initialDelayMs)
     }, 0)
     return () => clearTimeout(timer)
-  }, [audio, guiding, reducedMotion])
+  }, [audio, guiding, reducedMotion, storyActive])
+  useEffect(() => { if (storyPeek) audio.cue('peek', Math.max(0, destinations.findIndex(item => item.id === storyPeek))) }, [audio, storyPeek])
   useEffect(() => {
     // Wait for the staggered entrance, then bring the destinations into view once.
     // An intentional scroll, tap or keyboard action takes precedence.
-    const cancel = () => window.clearTimeout(timer)
+    if (arrivalHandled.current) return
+    const linkedSection = location.hash && !['#top', '#portfolio-menu'].includes(location.hash) ? document.getElementById(location.hash.slice(1)) : null
+    if (linkedSection) {
+      arrivalHandled.current = true
+      linkedSection.scrollIntoView({ block: 'start', behavior: 'instant' })
+      return
+    }
+    const cancel = () => { arrivalHandled.current = true; window.clearTimeout(timer) }
     const timer = window.setTimeout(() => {
-      navigation.current?.scrollIntoView({ block: 'center', behavior: reducedMotion ? 'instant' : 'smooth' })
+      arrivalHandled.current = true
+      if (navigation.current) window.scrollTo({ top: menuPosition(navigation.current), behavior: reducedMotion ? 'instant' : 'smooth' })
     }, reducedMotion ? 0 : 650)
     window.addEventListener('wheel', cancel, { passive: true })
     window.addEventListener('touchstart', cancel, { passive: true })
@@ -74,9 +85,9 @@ export function OrbitalNavigation({ audio, reducedMotion, onNavigate }: { audio:
   }
   return <nav id="portfolio-menu" tabIndex={-1} ref={navigation} className="bubble-navigation orbital-navigation" aria-label="Explore portfolio">
     {destinations.map(({ label, id, pixels }, index) => <div className="orbital-slot" key={id}>
-      <span className={`menu-peek-window ${guiding && (reducedMotion ? index === 0 : peek.visible && peek.index === index) ? 'is-peeking' : ''}`} aria-hidden="true" data-menu-guide={id}><span className="menu-peek-sprite">{['neutral', 'blink', 'jump'].map(pose => <img className={`menu-pose menu-pose-${pose}`} key={pose} src={`${import.meta.env.BASE_URL}assets/temporary/character-${pose}.png`} width="48" height="80" alt="" />)}</span></span>
+      <span className={`menu-peek-window ${guiding && (storyActive ? storyPeek === id : reducedMotion ? index === 0 : peek.visible && peek.index === index) ? 'is-peeking' : ''}`} aria-hidden="true" data-menu-guide={id}><span className="menu-peek-sprite">{['neutral', 'blink', 'jump'].map(pose => <img className={`menu-pose menu-pose-${pose}`} key={pose} src={`${import.meta.env.BASE_URL}assets/temporary/character-${pose}.png`} width="48" height="80" alt="" />)}</span></span>
       <span className="menu-grip" aria-hidden="true"><i /><i /></span>
-      <a className="navigation-bubble orbital-link" href={`#${id}`} onClick={() => onNavigate(id)}
+      <a className={`navigation-bubble orbital-link ${storyActive && storyPeek === id ? 'is-story-destination' : ''}`} href={`#${id}`} onClick={() => onNavigate(id)}
       style={{ animationDelay: `${index * 80}ms`, '--orbit-delay': `${-index * 1.3}s` } as CSSProperties}
       onPointerMove={tilt} onPointerLeave={event => {
         event.currentTarget.style.removeProperty('--tilt-x'); event.currentTarget.style.removeProperty('--tilt-y')
