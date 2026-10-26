@@ -52,9 +52,9 @@ h1,h2,h3,p { margin-top: 0; }
 .quiet:hover { background: #456c6833; }
 .secondary { border-color: var(--teal); background: transparent; color: var(--cream); }
 .asset-notice { font-size: 11px; margin: 15px 0 0; }
-.sound-controls { position: fixed; bottom: max(22px, env(safe-area-inset-bottom)); right: 30px; z-index: 30; background: #172522ef; border: 1px solid #456c6880; }
-.sound-toggle { display: grid; place-items: center; width: 48px; height: 48px; border: 0; padding: 0; background: none; touch-action: manipulation; }
-.sound-toggle:hover { background: #456c6833; }
+.sound-controls { position: fixed; bottom: max(22px, env(safe-area-inset-bottom)); right: 30px; z-index: 30; background: transparent; border: 0; }
+.sound-toggle { display: grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; background: none; touch-action: manipulation; }
+.sound-toggle:hover { opacity: .75; }
 .audio-message { position: absolute; width: min(255px, calc(100vw - 44px)); bottom: 55px; right: 0; font-size: 11px; padding: 14px; background: var(--forest); border: 1px solid var(--amber); }
 .portfolio-header { background: var(--forest); border-bottom: 1px solid #456c6855; position: sticky; top: 0; }
 .site-header nav { display: flex; gap: 32px; }

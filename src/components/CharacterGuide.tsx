@@ -7,7 +7,7 @@ const messages: Record<string, string> = {
   about: 'Hi, I’m Swathi. Let me share a little about how I work.',
   experience: 'Start with Citi, then follow the work into Verizon. Each stop adds a new perspective.',
   projects: 'Six stops tell the Citi project story. Choose a year to explore the decisions behind the work.',
-  experiments: 'These are ideas I brought to life beyond my enterprise work: Ritual and Jada.bit.',
+  experiments: 'These are ideas I brought to life beyond my enterprise work!',
   contact: 'Have something in mind? Here’s where we can connect.',
   'career-summary': 'Here are the clients and teams behind the projects.',
 }

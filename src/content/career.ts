@@ -77,6 +77,5 @@ export function chapterForYear(year: number): CareerChapter {
     tools: ['React', 'Spring Boot', 'Oracle', 'Quartz', 'YAML', 'GitHub Copilot'],
     projectIds: ['magna', 'ecommerce', 'contract'],
     exploration: ['LLM foundations', 'Retrieval pipelines', 'Vector databases'],
-    note: 'AI foundations are an area of exploration. The existing AI agent in the Magna ecosystem is not presented as an agent I built.',
   }
 }

@@ -4,6 +4,7 @@ import { profile, type Project } from '../content/portfolio'
 import { CaseStudy } from './CaseStudy'
 import { CareerJourney } from './CareerJourney'
 import { personalProjects } from '../content/personalProjects'
+import { PhotographySection } from './PhotographySection'
 import { OrbitalNavigation } from './OrbitalNavigation'
 import { CharacterGuide } from './CharacterGuide'
 import { ThinkingCharacter } from './ThinkingCharacter'
@@ -14,7 +15,7 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
   const [year, setYear] = useState(2018)
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [sectionVisit, setSectionVisit] = useState(0)
-  const navigate = (section: string) => { setSelectedSection(section); setSectionVisit(value => value + 1) }
+  const navigate = (section: string) => { setSelectedSection(section); setSectionVisit(value => value + 1); if (section === 'experience' || section === 'projects') setYear(2018) }
   const guideKey = (section: string) => `${section}-${selectedSection === section ? sectionVisit : 0}`
   const returnToMenu = () => {
     setSelectedSection(null)
@@ -42,7 +43,7 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
 
       <section id="experience" className="section projects-section content-width" aria-labelledby="projects-title"><div id="projects">
         <CharacterGuide key={`${selectedSection === 'projects' ? 'projects' : 'experience'}-${sectionVisit}`} section={selectedSection === 'projects' ? 'projects' : 'experience'} onReturn={returnToMenu} reducedMotion={reducedMotion} />
-        <CareerJourney year={year} onYearChange={setYear} onProject={setProject} reducedMotion={reducedMotion} />
+        <CareerJourney key={selectedSection === 'experience' || selectedSection === 'projects' ? `journey-${sectionVisit}` : 'journey'} year={year} onYearChange={setYear} onProject={setProject} reducedMotion={reducedMotion} dialogOpen={project !== null} />
       </div></section>
 
       <section id="about" className="section about-section content-width" aria-labelledby="about-title">
@@ -68,7 +69,7 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
 
       <section id="experiments" className="section personal-projects-section content-width" aria-labelledby="experiments-title">
         <CharacterGuide key={guideKey('experiments')} section="experiments" onReturn={returnToMenu} reducedMotion={reducedMotion} />
-        <div className="section-heading"><div><p className="eyebrow">04 / INSIDE THE JOURNEY</p><h2 id="experiments-title">Ideas I brought to life.</h2></div><p>From daily rituals to wearable pixels.<br />Personal projects across web and hardware.</p></div>
+        <div className="section-heading"><div><p className="eyebrow">04 / BEYOND WORK</p><h2 id="experiments-title">Ideas I brought to life.</h2></div><p>Web, wearables and photography.<br />Curiosity beyond the day job.</p></div>
         <div className="personal-project-grid">{personalProjects.map((item, index) => <article className={`personal-project personal-project-${item.id}`} key={item.id} aria-labelledby={`${item.id}-title`}>
           <div className="window-bar"><span>0{index + 1} / {item.id}</span><span className="window-controls" aria-hidden="true"><i /><i /></span></div>
           <div className="personal-project-body">
@@ -85,10 +86,10 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback }: { audio:
             <p className="stack-label">BUILT WITH</p><div className="tags">{item.technologies.map(tool => <span key={tool}>{tool}</span>)}</div>
           </div>
         </article>)}</div>
+        <PhotographySection />
         <section className="github-projects" aria-labelledby="github-projects-title" id="github-projects">
           <div className="window-bar"><span>GITHUB / WORKSPACE</span><span className="build-status"><i aria-hidden="true" />IN DEVELOPMENT</span></div>
           <div className="github-projects-body">
-            <div className="github-projects-symbol pixel" aria-hidden="true">&gt;_</div>
             <div><p className="eyebrow">GITHUB PROJECTS</p><h3 id="github-projects-title">Builds in progress.</h3><p>Experiments, practical tools and ideas taking shape. Selected repositories will appear here as they’re ready to share.</p></div>
             <a className="text-link" href={profile.github} target="_blank" rel="noreferrer">Explore my GitHub ↗</a>
           </div>

@@ -18,9 +18,10 @@ interface Props {
   onFade: () => void
   onStage: (stage: string) => void
   onFailure: () => void
+  onRendered: () => void
 }
 
-function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure }: Props) {
+function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure, onRendered }: Props) {
   const { app } = useApplication()
   const root = useRef<Container>(null)
   const character = useRef<Container>(null)
@@ -29,20 +30,21 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure 
   const camera = useRef<CameraState>({ x: experience.camera.startX, y: 0, zoom: experience.camera.startZoom })
 
   const draw = useCallback(() => {
-    if (!root.current || !app.renderer) return
+    if (!root.current || !app.renderer) return false
     positionCamera(root.current, camera.current, app.screen.width, app.screen.height)
     for (const layer of sceneLayers) {
       const sprite = layers.current[layer.id]
       if (sprite) sprite.x = camera.current.x * (1 - layer.depth) * 0.8
     }
     app.render()
+    return true
   }, [app])
 
   useLayoutEffect(() => {
     const renderer = app.renderer
     const canvas = app.canvas
     if (!renderer) return
-    draw()
+    if (draw()) onRendered()
     renderer.on('resize', draw)
     const lost = (event: Event) => { event.preventDefault(); onFailure() }
     canvas.addEventListener('webglcontextlost', lost)
@@ -50,7 +52,7 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure 
       renderer.off('resize', draw)
       canvas.removeEventListener('webglcontextlost', lost)
     }
-  }, [app, draw, onFailure])
+  }, [app, draw, onFailure, onRendered])
 
   useEffect(() => {
     if (!playing || !character.current || !portrait.current) return
@@ -80,7 +82,7 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure 
           ref={(sprite) => { layers.current[layer.id] = sprite }}
           width={experience.world.width} height={experience.world.height} />
       ))}
-      <pixiContainer ref={character} x={experience.character.x} y={experience.character.hiddenY} scale={experience.character.scale}>
+      <pixiContainer ref={character} x={experience.character.x} y={experience.character.hiddenY} scale={experience.character.scale} alpha={0}>
         <pixiSprite ref={portrait} texture={assets.textures.neutral} anchor={{ x: 0.5, y: 1 }} />
       </pixiContainer>
       <pixiSprite texture={assets.textures.ridge} width={experience.world.width} height={experience.world.height}
@@ -90,16 +92,21 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure 
 }
 
 export default function MountainWorld(props: Props) {
+  const { onRendered: notifyRendered } = props
   const parent = useRef<HTMLDivElement>(null)
   const [ready, setReady] = useState(false)
   const onInit = useCallback(() => setReady(true), [])
+  const onRendered = useCallback(() => {
+    parent.current?.setAttribute('data-render-ready', 'true')
+    notifyRendered()
+  }, [notifyRendered])
   // Pixel art needs a small backing buffer, not a retina-size framebuffer.
   const resolution = Math.min(1, Math.sqrt((960 * 540) / (window.innerWidth * window.innerHeight)))
   return (
-    <div className="pixi-world" ref={parent} aria-hidden="true">
+    <div className="pixi-world" ref={parent} aria-hidden="true" data-render-ready="false">
       <Application resizeTo={parent} autoStart={false} antialias={false} roundPixels onInit={onInit}
         resolution={resolution} autoDensity preference="webgl" backgroundColor={0x172522}>
-        {ready ? <World {...props} /> : null}
+        {ready ? <World {...props} onRendered={onRendered} /> : null}
       </Application>
     </div>
   )

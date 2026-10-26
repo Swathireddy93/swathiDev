@@ -6,15 +6,26 @@ import { projects, type Project } from '../content/portfolio'
 
 const years = Array.from({ length: experience.journey.lastYear - experience.journey.firstYear + 1 }, (_, i) => experience.journey.firstYear + i)
 
-export function CareerJourney({ year, onYearChange, onProject, reducedMotion }: {
-  year: number; onYearChange: (year: number) => void; onProject: (project: Project) => void; reducedMotion: boolean
+export function CareerJourney({ year, onYearChange, onProject, reducedMotion, dialogOpen }: {
+  year: number; onYearChange: (year: number) => void; onProject: (project: Project) => void; reducedMotion: boolean; dialogOpen: boolean
 }) {
-  const [playing, setPlaying] = useState(false)
+  const [playing, setPlaying] = useState(true)
+  const [inView, setInView] = useState(false)
+  const [pageVisible, setPageVisible] = useState(!document.hidden)
   const panel = useRef<HTMLDivElement>(null)
   const rail = useRef<HTMLDivElement>(null)
   const buttons = useRef<Record<number, HTMLButtonElement | null>>({})
   const chapter = chapterForYear(year)
   const visibleProjects = chapter.projectIds.map(id => projects.find(project => project.id === id)).filter((project): project is Project => !!project)
+  const playEnabled = playing && !reducedMotion
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting && entry.intersectionRatio >= .5), { threshold: .5 })
+    if (rail.current) observer.observe(rail.current)
+    const visibility = () => setPageVisible(!document.hidden)
+    document.addEventListener('visibilitychange', visibility)
+    return () => { observer.disconnect(); document.removeEventListener('visibilitychange', visibility) }
+  }, [])
 
   useLayoutEffect(() => {
     if (reducedMotion) return
@@ -27,13 +38,13 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion }: 
   }, [year, reducedMotion])
 
   useEffect(() => {
-    if (!playing || reducedMotion) return
+    if (!playEnabled || !inView || !pageVisible || dialogOpen) return
     const timer = window.setTimeout(() => {
       if (year < experience.journey.lastYear) onYearChange(year + 1)
       else setPlaying(false)
     }, experience.journey.hopMs)
     return () => window.clearTimeout(timer)
-  }, [playing, reducedMotion, year, onYearChange])
+  }, [playEnabled, inView, pageVisible, dialogOpen, year, onYearChange])
 
   useEffect(() => {
     const button = buttons.current[year]
@@ -55,10 +66,10 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion }: 
     <div className="section-heading"><div><p className="eyebrow">01 / A CAREER IN MOTION</p><h2 id="projects-title">Every year, a new perspective.</h2></div><p>2018 — 2026<br />Choose a year. Follow the work.</p></div>
     <div className="journey-controls">
       <span className="pixel">MY TECH STORY</span>
-      <button type="button" className="timeline-play" disabled={reducedMotion} aria-pressed={playing} onClick={() => {
+      <button type="button" className="timeline-play" disabled={reducedMotion} aria-pressed={playEnabled} onClick={() => {
         if (!playing && year === years.at(-1)) onYearChange(years[0])
         setPlaying(!playing)
-      }}>{playing ? 'Pause timeline' : 'Play timeline'} <span aria-hidden="true">{playing ? 'Ⅱ' : '▷'}</span></button>
+      }}>{playEnabled ? 'Pause timeline' : 'Play timeline'} <span aria-hidden="true">{playEnabled ? 'Ⅱ' : '▷'}</span></button>
     </div>
     <div className="year-scroll" ref={rail}>
       <div className="year-rail" role="tablist" aria-label="Career year">
@@ -83,9 +94,9 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion }: 
         </div>
       </div>
       {chapter.note && <p className="chapter-note">{chapter.note}</p>}
-      {chapter.storyStep ? <div className="citi-case-link"><span>One project · six perspectives · Oct 2018 – Mar 2024</span><button className="button secondary" type="button" onClick={() => onProject(visibleProjects[0])} aria-label="Read case study: Mortgage Application Modernization">Read the full Citi case study ↗</button></div> : <div className="project-grid">{visibleProjects.map(item => <article key={item.id} className="project-window">
-        <div className="window-bar"><span>{item.number} / {item.id}.project</span><span className="window-controls" aria-hidden="true"><i /><i /></span></div>
-        <div className="project-body"><p className="project-client">{item.period}</p><h3>{item.shortTitle}</h3><p className="project-description">{item.description}</p><div className="tags">{item.technologies.map(tech => <span key={tech}>{tech}</span>)}</div><div className="project-outcome"><strong>{item.metric}</strong><span>{item.metricLabel}</span></div><button className="case-button" type="button" onClick={() => onProject(item)} aria-label={`Read case study: ${item.title}`}>Read case study <span aria-hidden="true">↗</span></button></div>
+      {chapter.storyStep ? <div className="citi-case-link"><span>One project · six perspectives · Oct 2018 – Mar 2024</span><button className="button secondary case-study-trigger" type="button" onClick={() => onProject(visibleProjects[0])} aria-label="Read case study: Mortgage Application Modernization">Read the full Citi case study ↗</button></div> : <div className="project-grid">{visibleProjects.map(item => <article key={item.id} className="project-window">
+        <div className="window-bar"><span>{item.number} / {item.windowLabel ?? `${item.id}.project`}</span><span className="window-controls" aria-hidden="true"><i /><i /></span></div>
+        <div className="project-body"><p className="project-client">{item.period}</p><h3>{item.shortTitle}</h3><p className="project-description">{item.description}</p><div className="tags">{item.technologies.map(tech => <span key={tech}>{tech}</span>)}</div><div className="project-outcome"><strong>{item.metric}</strong><span>{item.metricLabel}</span></div><button className="case-button case-study-trigger" type="button" onClick={() => onProject(item)} aria-label={`Read case study: ${item.title}`}>Read case study <span aria-hidden="true">↗</span></button></div>
       </article>)}</div>}
     </div>
     <div className="year-steppers"><button type="button" disabled={year === years[0]} onClick={() => select(year - 1)} aria-label="Previous year">← Previous year</button><span className="pixel">{year} / 2026</span><button type="button" disabled={year === years.at(-1)} onClick={() => select(year + 1)} aria-label="Next year">Next year →</button></div>

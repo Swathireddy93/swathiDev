@@ -1,7 +1,7 @@
 # SWATHI — an interactive career journey
 
 Swathi Shivashankar Reddy's React/TypeScript pixel-art portfolio:
-asset loading with a four-second minimum reveal and a brief visible 100% hold → front-facing character peeking, blinking and jumping →
+asset loading with a four-second minimum reveal and a brief visible 100% hold → first painted mountain frame → short pixel-block reveal → front-facing character peeking, blinking and jumping →
 camera close-up → first-person Bay/city flight → rooftop portfolio with bubble
 navigation → a selectable career journey from 2018 to 2026.
 
@@ -151,7 +151,7 @@ it does not know about project content or routing.
 ### Loading, camera and audio
 
 - Progress reflects actual critical textures and font loads; there is no fake delay.
-- Loading automatically enters the character sequence. There is no welcome card,
+- The renderer initializes behind the loading screen. Loading leaves only after assets and the first painted scene are ready, then a 500ms analog-TV tune-in briefly overlays the visible scenery. Renderer startup is bounded by the asset timeout. Loading automatically enters the character sequence. There is no welcome card,
   Play Intro gate, or sound-choice screen. A normal refresh starts the journey
   again; Skip intro is always available, including during loading and flight.
 - The character faces the camera, peeks, jumps, lands, ducks and reappears. Jump
@@ -168,7 +168,7 @@ it does not know about project content or routing.
   the first click/Enter/Space retries, or the visitor can use the speaker icon.
   Autoplay is attempted, not guaranteed or bypassed. Real file/load errors remain
   visible and retryable.
-- The speaker is available during loading too. It is a single 48px icon toggle,
+- The speaker is available during loading too. It is an 18px icon with a transparent 44px tap target,
   without a volume slider or cancel/X icon. Explicit mute cancels automatic retry.
   Music continues into the portfolio and across replay; resources and timers are
   released on unmount. Short jump/landing effects are preloaded and use Web Audio.
@@ -179,7 +179,7 @@ it does not know about project content or routing.
 
 ### Time-based projects and experience
 
-The five bubble destinations are About Me, Experience, Projects, Experiments and
+The five bubble destinations are About Me, Experience, Projects, Beyond Work and
 Contact. Experience and Projects lead to the same career journey. The 2018–2026
 rail supports mouse/touch, Arrow keys, Home/End, previous/next, and an optional
 Play Timeline action. GSAP transitions the chapter and hops the selected marker;
@@ -276,28 +276,42 @@ to the menu. These are written guide cues; no synthesized narration is added.
 
 The 2018–2023 stops are six narrative perspectives on the same Citi mortgage project,
 not claims that specific releases occurred in those years. The tools remain shared
-across the documented tenure. Timeline playback allows 6.5 seconds per stop.
+across the documented tenure. Timeline playback starts automatically when the year rail is in view, allowing three seconds per stop. Manual selection pauses playback. Hidden tabs, offscreen rails, case-study dialogs and reduced motion pause or disable automatic advancement. Menu entry starts the journey again from 2018.
 
 Music still attempts audible playback at entry from 0:45; browser autoplay policies
 can require the first interaction. The speaker highlights its current state without
 adding an entry gate.
 
-Public portfolio: https://ssr-tech-portfolio.vercel.app/ (Vercel project `ssr-tech-portfolio`). Production is public; preview deployments require Vercel authentication.
+Public portfolio: https://ssreddy.com/ (existing Vercel project `ssr-tech-portfolio`). Production is public; preview deployments require Vercel authentication.
+
+The canonical and Open Graph URLs in `index.html`, `public/sitemap.xml` and the sitemap reference in `public/robots.txt` use this production domain. Navigation and asset URLs remain relative so local development, protected previews and the existing GitHub Pages build continue to work. Domain assignment, DNS, TLS and permanent redirects belong in the Vercel project's **Settings → Domains**, rather than application routing or a hardcoded hosting configuration. No custom environment variables or authentication callback URLs are required by this static portfolio.
 
 
 The guide now retains the opening character’s original colors. The portfolio’s
 neutral palette uses its own colors instead of a grayscale filter on the entire
 page. Menu peeks reuse the neutral, blink and jump sprites with a small bounce
-and hands on the circle edge. The Experiments guide pairs her with an original pixel-art bulb. The upright standing figure shares a consistent pixel body with the other poses. Her left hand lifts into an open-palm ta-da gesture in sync with the six-second warm yellow glow loop; it pauses offscreen and in hidden tabs. Reduced motion keeps the bulb steadily lit.
+and hands on the circle edge. The Beyond Work guide is a tiny maker’s workshop. The seated character has visible legs under the desk; the laptop screen faces her and its back faces the viewer. Orange pixels rise toward one warm glowing bulb in a six-second loop. Motion pauses offscreen and in hidden tabs; reduced motion keeps the bulb lit.
 
 Jada.bit’s GitHub action links to the supplied profile. Set `repository.url` in `src/content/personalProjects.ts` to a project URL when its repository is ready to share. The GitHub Projects area reserves space for builds in progress without fictitious repositories or progress metrics.
 
-About Me uses an original pixel-art table vignette with the opening character’s face and a seated, upright body with a repeating hand wave. The Experience character dabs and the team character flexes both arms in place every four seconds, holding each pose for 900 ms. Its timer pauses offscreen and in hidden tabs; reduced motion leaves a neutral pose.
+About Me uses an original pixel-art table vignette with the opening character’s face and a seated, upright body with a repeating hand wave. Three staggered coffee-steam wisps rise from the mug; they pause offscreen and stay still for reduced motion. The Experience character dabs and the team character flexes both arms in place every four seconds, holding each pose for 900 ms. Its timer pauses offscreen and in hidden tabs; reduced motion leaves a neutral pose.
 
-The contact invitation has two lines on the left. A smaller glasses-wearing character performs the Bee’s Knees step on the right: her feet stay planted while her knees move inward and outward and her hands cross between the knees. A 2.4-second GSAP loop keeps the joints connected while occasional question marks retain the thoughtful expression. GitHub actions use the supplied profile URL; the Jada.bit action is labeled as a profile link until a project-specific repository URL is supplied.
+The contact invitation has two lines on the left. A smaller glasses-wearing character walks across the space on the right, pauses at each end with three staggered question marks, then turns and walks back. The 3.8-second walk and 1.6-second thinking pause are configurable in `experience.guide`. Resize measurements keep both endpoints inside the available space. The shared pixel figure keeps the head, body and limb proportions consistent. GitHub actions use the supplied profile URL; the Jada.bit action is labeled as a profile link until a project-specific repository URL is supplied.
 
-Section animations now loop while visible and pause outside the viewport or a hidden tab. The Experiments idea expression repeats without travelling across the text. Seated and standing figures blink without tilting their heads. Menu navigation remounts the selected guide (and contact animation) so every menu visit starts its animation from the beginning. Reduced motion leaves still poses.
+Section animations now loop while visible and pause outside the viewport or a hidden tab. The Beyond Work idea expression repeats without travelling across the text. Seated and standing figures blink without tilting their heads. Menu navigation remounts the selected guide (and contact animation) so every menu visit starts its animation from the beginning. Reduced motion leaves still poses.
 
 Mobile layout keeps the opening name and role centered, balances the readable introduction copy and uses consistent section margins. The contact character remains alongside the two-line invitation on small screens.
 
 Spacing follows a shared hierarchy: 64px main section padding, 32px chapter gaps, 24px group gaps and 16px detail gaps; mobile uses 48px, 24px, 20px and 16px. About Me uses the chapter gap between its banner and body instead of stacking a grid gap and banner margin.
+
+The speaker is an 18px icon with no visible container and a 44px transparent tap target. The role uses a distinct monospaced font; mobile introduction copy balances into two lines. Circle grips share the jump timing so they disappear during raised-arm frames. The dab uses shorter arm geometry consistent with the neutral figure.
+
+Project cards use responsive, single-line headings and consistently white case-study entry buttons. Set `windowLabel` in the project data to override the default file-style card label; Contract Transparency uses its full project name.
+
+Beyond Work includes the approved photography story and Instagram link after Jada.bit. `src/content/photography.ts` holds the content and image source; the original repository photo is `public/portfolioPicture.jpeg`, referenced through the Vite base URL. It keeps its natural proportions inside the circular crop, uses intrinsic dimensions, lazy loading and asynchronous decoding, and retains a fallback if loading fails.
+
+A short “Unmute for music” hint accompanies the speaker while initial playback is blocked. It disappears after enabling music and is dismissed on intentional speaker use.
+
+The `>_` terminal decoration was removed from Builds in progress; the existing IN DEVELOPMENT label conveys its status without an unexplained symbol.
+
+The opening waits for both loaded assets and a painted mountain frame before removing the loader. A 500 ms analog-TV tune-in adds faint monochrome static, scanlines and horizontal tracking over the visible landscape. It clears automatically, never intercepts input and is omitted for reduced motion. Adjust `experience.loading.tvRevealMs` to change its duration without changing the cinematic timeline.

@@ -3,6 +3,7 @@ export interface Project {
   number: string
   title: string
   shortTitle: string
+  windowLabel?: string
   employer: string
   client: string
   period: string
@@ -50,7 +51,7 @@ export const projects: Project[] = [
     outcomes: ['Delivered dynamic forms, multi-filter views, grids and dashboards with reusable Verizon VDS controls.', 'Standardized frontend build and deployment workflows.'],
   },
   {
-    id: 'contract', number: '06', title: 'Contract Transparency Platform', shortTitle: 'A reusable foundation for scale',
+    id: 'contract', number: '06', title: 'Contract Transparency Platform', shortTitle: 'A reusable foundation for scale', windowLabel: 'contract transparency project',
     employer: 'HCLTech', client: 'Verizon', period: 'Sep 2025 — Jan 2026 · concurrent project',
     description: 'React/Redux modernization for enterprise workflows supporting 10,000+ annual work orders.',
     technologies: ['React', 'Redux', 'Design systems'],

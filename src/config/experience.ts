@@ -21,9 +21,9 @@ export const experience = {
   },
   flight: { duration: 10.5, bayAt: 1.8, cityAt: 4.0, landingAt: 8.7 },
   audio: { musicStartSeconds: 45, musicEndSeconds: 242.364, musicVolume: 0.35, jumpVolume: 0.85, landVolume: 0.7, duckTo: 0.45, duckHoldMs: 450, restoreMs: 500 },
-  journey: { firstYear: 2018, lastYear: 2026, hopMs: 6500 },
-  guide: { poseEveryMs: 4000, poseHoldMs: 900, initialDelayMs: 1800, peekMs: 2500, gapMs: 1000 },
-  loading: { minimumMs: 4000, completeHoldMs: 450 },
+  journey: { firstYear: 2018, lastYear: 2026, hopMs: 3000 },
+  guide: { poseEveryMs: 4000, poseHoldMs: 900, initialDelayMs: 1800, peekMs: 2500, gapMs: 1000, thinkingWalkSeconds: 3.8, thinkingPauseSeconds: 1.6 },
+  loading: { minimumMs: 4000, completeHoldMs: 450, tvRevealMs: 500 },
   assetsTimeoutMs: 12_000,
   artworkStatus: 'Temporary procedural pixel art; final art awaits visual review.',
 } as const

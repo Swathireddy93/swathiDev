@@ -12,6 +12,10 @@ export function CharacterRestScene() {
     <path d="M9 87h94v3H9zM16 90h5v22h-5zm75 0h5v22h-5z" fill="#4b4f52" />
     <path d="M14 68h11v11H14zm11 2h5v7h-5v-2h3v-3h-3z" fill="#b9bdc0" />
     <path d="M16 67h7v2h-7z" fill="#24282c" />
-    <path d="M16 59h2v5h-2zm5-2h2v5h-2z" fill="#777d82" />
+    <g className="coffee-steam" fill="#a2a9ab">
+      <path className="steam-wisp steam-one" d="M16 65v-3h2v-3h-1v-2h2v3h-2v3h1v2z" />
+      <path className="steam-wisp steam-two" d="M20 65v-3h-1v-2h2v-3h2v3h-1v3h-1v2z" />
+      <path className="steam-wisp steam-three" d="M23 65v-3h1v-3h2v3h-1v3z" />
+    </g>
   </svg>
 }
