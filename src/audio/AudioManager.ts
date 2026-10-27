@@ -30,6 +30,22 @@ export class AudioManager {
   private state: AudioState = { muted: true, volume: experience.audio.musicVolume, status: 'idle', message: '', lastCue: '' }
   private fadeTimer: ReturnType<typeof setTimeout> | undefined
   private duckTimer: ReturnType<typeof setTimeout> | undefined
+  private farewell: SpeechSynthesisUtterance | undefined
+
+  sayBye = () => {
+    if (!this.active || this.state.muted || this.state.status !== 'playing' || !('speechSynthesis' in window)) return
+    this.stopBye()
+    const voice = new SpeechSynthesisUtterance('Bye!')
+    voice.lang = 'en-US'; voice.pitch = 1.25; voice.rate = 1.05; voice.volume = this.state.volume
+    const available = window.speechSynthesis.getVoices()
+    voice.voice = available.find(item => item.lang === 'en-US' && item.localService) ?? available.find(item => item.lang.startsWith('en')) ?? null
+    this.farewell = voice
+    window.speechSynthesis.speak(voice)
+  }
+  stopBye = () => {
+    if (this.farewell && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    this.farewell = undefined
+  }
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -122,6 +138,7 @@ export class AudioManager {
     else this.update({ status: 'playing' })
   }
   mute = () => {
+    this.stopBye()
     this.autoplayPending = false
     clearTimeout(this.duckTimer)
     this.sounds.forEach((sound) => sound.mute(true))
@@ -156,6 +173,7 @@ export class AudioManager {
     this.fadeTimer = setTimeout(() => this.stop(), milliseconds)
   }
   stop = () => {
+    this.stopBye()
     clearTimeout(this.fadeTimer)
     clearTimeout(this.duckTimer)
     this.active = false

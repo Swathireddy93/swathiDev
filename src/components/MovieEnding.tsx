@@ -1,9 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useSyncExternalStore } from 'react'
+import type { AudioManager } from '../audio/AudioManager'
 import { PixelFigure } from './PixelFigure'
 import { useCharacterActivity } from '../hooks/useCharacterActivity'
 
-export function MovieEnding({ playing, onExit }: { playing: boolean; onExit: () => void }) {
+export function MovieEnding({ audio, playing, onExit }: { audio: AudioManager; playing: boolean; onExit: () => void }) {
   const character = useRef<SVGSVGElement>(null)
+  const greeted = useRef(false)
+  const sound = useSyncExternalStore(audio.subscribe, audio.snapshot)
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    if (playing && !sound.muted && sound.status === 'playing' && !greeted.current) {
+      timer = setTimeout(() => { greeted.current = true; audio.sayBye() }, 100)
+    }
+    return () => { clearTimeout(timer); audio.stopBye() }
+  }, [audio, playing, sound.muted, sound.status])
   useCharacterActivity(character)
   useEffect(() => {
     const escape = (event: KeyboardEvent) => { if (event.key === 'Escape') onExit() }

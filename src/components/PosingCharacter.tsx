@@ -10,14 +10,17 @@ export function PosingCharacter({ reducedMotion, pose }: { reducedMotion: boolea
     let visible = false
     let interval: ReturnType<typeof setInterval> | undefined
     let release: ReturnType<typeof setTimeout> | undefined
-    const clear = () => { clearInterval(interval); clearTimeout(release) }
+    let first: ReturnType<typeof setTimeout> | undefined
+    const clear = () => { clearInterval(interval); clearTimeout(release); clearTimeout(first) }
     const sync = () => {
       clear(); setPosing(false)
       if (!visible || document.hidden || reducedMotion) return
-      interval = setInterval(() => {
+      const perform = () => {
         setPosing(true); setCount(value => value + 1)
         release = setTimeout(() => setPosing(false), experience.guide.poseHoldMs)
-      }, experience.guide.poseEveryMs)
+      }
+      if (pose === 'dab' && window.matchMedia('(max-width: 700px)').matches) first = setTimeout(perform, 1200)
+      interval = setInterval(perform, experience.guide.poseEveryMs)
     }
     const observer = new IntersectionObserver(([entry]) => {
       visible = entry.isIntersecting; sync()

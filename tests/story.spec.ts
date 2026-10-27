@@ -39,6 +39,29 @@ async function expectClearOfHeader(page: Page, selector: string) {
   expect(spacing.top - spacing.headerBottom).toBeGreaterThanOrEqual(spacing.gap - 1)
 }
 
+test('mobile Projects holds the dab introduction before moving to the timeline, with glass controls', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openStory(page)
+  await page.clock.fastForward(7000)
+  await page.clock.runFor(64)
+  for (let step = 0; step < 30; step++) {
+    if (await page.locator(controls).getAttribute('data-story-beat') === 'projects:introduction') break
+    await advanceBeat(page)
+  }
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'projects:introduction')
+  await page.clock.runFor(100)
+  const before = await page.evaluate(() => scrollY)
+  await page.clock.runFor(2400)
+  expect(await page.evaluate(() => scrollY)).toBe(before)
+  expect(Number(await page.locator('[data-guide-section="projects"] .posing-character').getAttribute('data-pose-count'))).toBeGreaterThan(0)
+  for (const selector of ['.sound-toggle', '.movie-toggle']) {
+    await expect(page.locator(selector)).toHaveCSS('border-radius', '50%')
+    await expect(page.locator(selector)).toHaveCSS('backdrop-filter', 'blur(12px)')
+  }
+  await page.clock.runFor(3000)
+  expect(await page.evaluate(() => scrollY)).toBeGreaterThan(before + 10)
+})
+
 test('the Contact message and Back to menu link stay inside the padded banner', async ({ page }, info) => {
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')

@@ -111,7 +111,7 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback, ending, on
       <footer className="site-footer content-width"><span className="pixel">SWATHI / MADE WITH PERSPECTIVE</span><span>{fallback ? 'A quieter, static view.' : 'Early prototype · artwork in progress'}</span><a href="#top">Back to top ↑</a></footer>
       </div>
       <MovieControls story={story.snapshot} onPause={story.pause} onPlay={story.play} />
-      {ending && <MovieEnding playing={story.snapshot.status === 'playing'} onExit={exitEnding} />}
+      {ending && <MovieEnding audio={audio} playing={story.snapshot.status === 'playing'} onExit={exitEnding} />}
       <CaseStudy project={project} onClose={() => setProject(null)} />
     </main>
   )

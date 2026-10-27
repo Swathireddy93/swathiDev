@@ -113,6 +113,7 @@ export class StoryPlayer {
   }
   private readingPace(beat: StoryBeat) {
     const timing = experience.story
+    if (beat.id === 'projects:introduction' && window.matchMedia('(max-width: 700px)').matches) return { lead: 3000, tail: timing.projectTailMs }
     return beat.chapter === 'projects' ? { lead: timing.projectLeadMs, tail: timing.projectTailMs } : { lead: timing.leadMs, tail: timing.tailMs }
   }
   private measure(beat: StoryBeat) {
@@ -127,7 +128,7 @@ export class StoryPlayer {
     const words = target?.innerText.trim().split(/\s+/).length ?? 0
     const distance = Math.abs(this.destination(beat) - this.from)
     const pace = this.readingPace(beat)
-    if (beat.id === 'projects:introduction') return timing.projectIntroMs
+    if (beat.id === 'projects:introduction') return timing.projectIntroMs + (window.matchMedia('(max-width: 700px)').matches ? 3000 : 0)
     const duration = Math.max(timing.minimumReadMs, words / timing.wordsPerMinute * 60_000, distance / timing.pixelsPerSecond * 1000 + pace.lead + pace.tail)
     return beat.chapter === 'about' ? Math.max(timing.minimumReadMs, duration - timing.aboutTrimMs) : duration
   }
