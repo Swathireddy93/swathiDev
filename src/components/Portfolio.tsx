@@ -86,10 +86,12 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback, ending, on
             <p className="eyebrow">{item.category}</p>
             <h3 id={`${item.id}-title`} className="pixel">{item.name}</h3>
             <p className="personal-tagline">{item.tagline}</p>
+            {item.website && <p><a className="text-link personal-site" href={item.website} target="_blank" rel="noreferrer">Visit {item.name} ↗</a></p>}
             {item.repository && <div className="project-repository">
               {item.repository.url ? <a className="button secondary" href={item.repository.url} target="_blank" rel="noreferrer"><span aria-hidden="true">&lt;/&gt;</span> {item.repository.label ?? 'GitHub repository'} ↗</a> :
                 <span className="button secondary repository-placeholder github-placeholder"><span aria-hidden="true">&lt;/&gt;</span> GitHub link coming soon</span>}
             </div>}
+            {item.introduction && <p className="personal-introduction">{item.introduction}</p>}
             <p>{item.description}</p><p>{item.detail}</p>
             <p className="stack-label">BUILT WITH</p><div className="tags">{item.technologies.map(tool => <span key={tool}>{tool}</span>)}</div>
           </div>

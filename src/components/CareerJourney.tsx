@@ -82,10 +82,10 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
       <div className="project-era-rail">
         <div className={`project-era ${year <= 2023 ? 'is-current' : ''}`}>
           <span className="era-bracket" aria-hidden="true" />
-          <span className="era-label"><span className="era-dot" aria-hidden="true" />Where my foundations took shape <span>· Oct 2018 – Mar 2024</span></span>
         </div>
       </div>
     </div>
+    {year <= 2023 && <p className="era-label era-caption"><span className="era-dot" aria-hidden="true" />Where my foundations took shape <span>· Oct 2018 – Mar 2024</span></p>}
     <div id="career-panel" role="tabpanel" aria-labelledby={`year-${year}`} tabIndex={0} ref={panel} className="career-panel" data-year={year}>
       <div className="career-chapter">
         <div className="chapter-year"><span className="pixel">{year}</span><span>{chapter.period}</span></div>

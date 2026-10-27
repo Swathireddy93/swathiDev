@@ -4,7 +4,7 @@ import { IdleCharacter } from './IdleCharacter'
 import { CharacterPortrait } from './CharacterPortrait'
 
 const messages: Record<string, string> = {
-  about: 'Hi, I’m Swathi. Let me share a little about how I work.',
+  about: 'Let me share a little about how I work.',
   experience: 'Here are the clients and teams behind the projects.',
   projects: 'Start with Citi, then follow the work into Verizon. Each stop adds a new perspective.',
   experiments: 'These are ideas I brought to life beyond my enterprise work!',

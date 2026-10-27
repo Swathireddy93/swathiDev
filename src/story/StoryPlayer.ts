@@ -1,7 +1,7 @@
 import { experience } from '../config/experience'
 import { buildStoryBeats, type StoryBeat, type StoryChapter } from './storyboard'
 import { menuPosition } from './menuPosition'
-import { storyViewport } from './viewport'
+import { contentBounds, storyViewport } from './viewport'
 
 export interface StorySnapshot {
   status: 'waiting' | 'playing' | 'paused' | 'complete' | 'off'
@@ -94,7 +94,7 @@ export class StoryPlayer {
   private destination(beat: StoryBeat) {
     const target = this.target(beat)
     if (!target) return window.scrollY
-    const rect = target.getBoundingClientRect()
+    const rect = contentBounds(target)
     const viewport = storyViewport()
     const max = document.documentElement.scrollHeight - window.innerHeight
     if (beat.kind === 'menu') return menuPosition(target)
@@ -102,18 +102,26 @@ export class StoryPlayer {
     if (beat.kind === 'read') return clamp(Math.max(this.from, window.scrollY + rect.bottom - viewport.bottom), max)
     return clamp(start, max)
   }
+  private readingPace(beat: StoryBeat) {
+    const timing = experience.story
+    return beat.chapter === 'projects' ? { lead: timing.projectLeadMs, tail: timing.projectTailMs } : { lead: timing.leadMs, tail: timing.tailMs }
+  }
   private measure(beat: StoryBeat) {
     this.from = window.scrollY
     const timing = experience.story
     if (beat.kind === 'hold') return timing.contactHoldMs
     if (beat.kind === 'ending') return timing.endingMs
     if (beat.kind === 'peek') return timing.peekMs
-    if (beat.kind === 'year') return experience.journey.hopMs + (Math.abs(this.destination(beat) - this.from) > 1 ? timing.yearMs : 0)
+    if (beat.kind === 'year') return timing.projectLeadMs + (Math.abs(this.destination(beat) - this.from) > 1 ? timing.yearMs : 0)
     if (beat.kind !== 'read') return timing.travelMs
     const target = this.target(beat)
     const words = target?.innerText.trim().split(/\s+/).length ?? 0
     const distance = Math.abs(this.destination(beat) - this.from)
-    return Math.max(timing.minimumReadMs, words / timing.wordsPerMinute * 60_000, distance / timing.pixelsPerSecond * 1000 + timing.leadMs + timing.tailMs)
+    const pace = this.readingPace(beat)
+    if (beat.id === 'projects:introduction') return timing.projectIntroMs
+    if (beat.chapter === 'projects') return Math.max(experience.journey.hopMs, distance / timing.projectPixelsPerSecond * 1000 + pace.lead + pace.tail)
+    const duration = Math.max(timing.minimumReadMs, words / timing.wordsPerMinute * 60_000, distance / timing.pixelsPerSecond * 1000 + pace.lead + pace.tail)
+    return beat.chapter === 'about' ? Math.max(timing.minimumReadMs, duration - timing.aboutTrimMs) : duration
   }
   private tick = (now: number) => {
     this.frame = 0
@@ -131,9 +139,10 @@ export class StoryPlayer {
       else {
         this.elapsed += delta
         const reading = beat.kind === 'read'
-        const motionMs = reading ? Math.max(1, this.duration - experience.story.leadMs - experience.story.tailMs)
+        const pace = this.readingPace(beat)
+        const motionMs = reading ? Math.max(1, this.duration - pace.lead - pace.tail)
           : beat.kind === 'year' ? experience.story.yearMs : Math.max(1, this.duration)
-        const progress = clamp((this.elapsed - (reading ? experience.story.leadMs : 0)) / motionMs, 1)
+        const progress = clamp((this.elapsed - (reading ? pace.lead : 0)) / motionMs, 1)
         if (beat.target) window.scrollTo({ top: this.from + (this.destination(beat) - this.from) * (reading ? progress : ease(progress)), behavior: 'instant' })
         if (this.elapsed >= this.duration) {
           this.index++

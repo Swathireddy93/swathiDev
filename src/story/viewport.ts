@@ -1,4 +1,14 @@
 /** Shared camera margins for landing frames and automatic content stops. */
+export function contentBounds(element: HTMLElement) {
+  const rect = element.getBoundingClientRect()
+  const styles = getComputedStyle(element)
+  const section = element.classList.contains('section')
+  return {
+    top: rect.top + (section ? parseFloat(styles.paddingTop) || 0 : 0),
+    bottom: rect.bottom - (section ? parseFloat(styles.paddingBottom) || 0 : 0),
+  }
+}
+
 export function storyViewport() {
   const styles = getComputedStyle(document.documentElement)
   const gap = parseFloat(styles.getPropertyValue('--story-top-gap')) || 24

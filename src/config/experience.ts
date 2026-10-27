@@ -30,7 +30,7 @@ export const experience = {
   journey: { firstYear: 2018, lastYear: 2026, hopMs: 3000 },
   guide: { poseEveryMs: 4000, poseHoldMs: 900, initialDelayMs: 1800, peekMs: 2500, gapMs: 1000, thinkingWalkSeconds: 3.8, thinkingPauseSeconds: 1.6 },
   loading: { minimumMs: 4000, completeHoldMs: 450, tvRevealMs: 500 },
-  story: { idleMs: 3000, travelMs: 1400, peekMs: 1500, yearMs: 1600, leadMs: 1800, tailMs: 2200, wordsPerMinute: 240, pixelsPerSecond: 38, minimumReadMs: 6500, contactHoldMs: 4500, endingMs: 5000 },
+  story: { idleMs: 3000, travelMs: 1400, peekMs: 1500, yearMs: 1600, leadMs: 1800, tailMs: 2200, wordsPerMinute: 240, pixelsPerSecond: 38, minimumReadMs: 6500, aboutTrimMs: 5000, projectIntroMs: 1800, projectLeadMs: 600, projectTailMs: 500, projectPixelsPerSecond: 85, contactHoldMs: 4500, endingMs: 5000 },
   assetsTimeoutMs: 12_000,
   artworkStatus: 'Temporary procedural pixel art; final art awaits visual review.',
 } as const

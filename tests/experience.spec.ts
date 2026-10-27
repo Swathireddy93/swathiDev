@@ -357,6 +357,7 @@ test('About Me includes the supplied story with emphasis and the résumé link',
   const about = page.locator('#about .about-copy')
   await expect(about.locator('p')).toHaveCount(7)
   await expect(about.locator('p').first()).toHaveText("Hey, I'm Swathi!")
+  await expect(page.locator('[data-guide-section="about"] p')).toHaveText('Let me share a little about how I work.')
   await expect(about).toContainText("But my curiosity doesn't really clock out after work.")
   await expect(about.locator('em')).toHaveText('"Wait, what if I tried this?"')
   await expect(about.locator('strong')).toHaveText("So, this little corner of the internet is a mix of what I've learned, what I've built and everything I'm still curious about.")
@@ -809,4 +810,19 @@ test('Builds in progress uses its readable development status without a terminal
   await expect(builds.getByRole('heading', { name: 'Builds in progress.' })).toBeVisible()
   await expect(builds.locator('.build-status')).toHaveText('IN DEVELOPMENT')
   await expect(builds).not.toContainText('>_')
+})
+
+
+test('Ritual opens its supplied website and Jada.bit starts with the electronics background', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  const ritual = page.locator('.personal-project-ritual')
+  await expect(ritual.getByRole('link', { name: 'Visit Ritual' })).toHaveAttribute('href', 'https://ssr-personal-cookbook.vercel.app/')
+  await expect(ritual.getByRole('link', { name: 'Visit Ritual' })).toHaveAttribute('target', '_blank')
+  const jada = page.locator('.personal-project-jada-bit')
+  await expect(jada.locator('.personal-introduction')).toContainText('bachelor’s in Electronics and Communication Engineering')
+  await expect(jada.locator('.personal-introduction')).toContainText('embedded systems, microcontrollers and hardware–software integration')
+  await expect(jada).toContainText('Designed and built a programmable digital hair accessory')
+  expect(await jada.locator('.personal-introduction').evaluate(element => element.nextElementSibling!.textContent!.startsWith('Designed and built'))).toBe(true)
+  await expect(page.locator('a[href*="github.com"]')).toHaveCount(0)
 })

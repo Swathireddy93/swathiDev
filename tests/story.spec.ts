@@ -58,24 +58,47 @@ test('the Contact message and Back to menu link stay inside the padded banner', 
   }
 })
 
-for (const width of [1440, 390]) test(`Projects keeps the camera on the timeline until 2026 at ${width}px`, async ({ page }, info) => {
-  await page.setViewportSize({ width, height: 900 })
+for (const [width, height] of [[1440, 900], [390, 844], [320, 740]]) test(`Projects frames each year from the rail through the chapter boundary at ${width}px`, async ({ page }, info) => {
+  await page.setViewportSize({ width, height })
   await openStory(page)
   await page.clock.fastForward(7000)
   await page.clock.runFor(64)
   for (let step = 0; step < 20; step++) {
-    if (await page.locator(controls).getAttribute('data-story-beat') === 'projects:2018:year') break
+    if (await page.locator(controls).getAttribute('data-story-beat') === 'projects:introduction') break
     await advanceBeat(page)
   }
-  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'projects:2018:year')
-  await page.clock.runFor(1800)
-  const cameraY = await page.evaluate(() => scrollY)
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'projects:introduction')
+  await expect(page.locator('#projects-title')).toBeInViewport()
+  await expectClearOfHeader(page, '#projects .section-character-guide')
+  await advanceBeat(page)
   for (let year = 2018; year <= 2026; year++) {
     await expect(page.locator(controls)).toHaveAttribute('data-story-beat', `projects:${year}:year`)
     await expect(page.locator('#career-panel')).toHaveAttribute('data-year', String(year))
-    expect(Math.abs(await page.evaluate(() => scrollY) - cameraY)).toBeLessThanOrEqual(1)
+    await advanceBeat(page)
+    await expect(page.locator(controls)).toHaveAttribute('data-story-beat', `projects:${year}:read`)
     await expect(page.locator('.year-scroll')).toBeInViewport({ ratio: 1 })
-    if (year === 2025) await page.screenshot({ path: info.outputPath(`timeline-only-${width}.png`) })
+    const framing = await page.evaluate(() => ({
+      controls: document.querySelector('.journey-controls')!.getBoundingClientRect().top,
+      header: document.querySelector('.site-header')!.getBoundingClientRect().bottom,
+      gap: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--story-top-gap')),
+      bottom: (visualViewport?.height ?? innerHeight) - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--story-bottom-gap')),
+    }))
+    expect(Math.abs(framing.controls - framing.header - framing.gap)).toBeLessThanOrEqual(1)
+    const startingY = await page.evaluate(() => scrollY)
+    const bottom = () => page.locator('.career-chapter').evaluate(element => element.getBoundingClientRect().bottom)
+    const overflowed = await bottom() > framing.bottom + 1
+    for (let tick = 0; tick < 150 && await bottom() > framing.bottom + 1; tick++) {
+      await expect(page.locator(controls)).toHaveAttribute('data-story-beat', `projects:${year}:read`)
+      await page.clock.fastForward(100)
+    }
+    expect(await bottom()).toBeLessThanOrEqual(framing.bottom + 1)
+    if (overflowed) expect(Math.abs(await bottom() - framing.bottom)).toBeLessThanOrEqual(1)
+    else expect(Math.abs(await page.evaluate(() => scrollY) - startingY)).toBeLessThanOrEqual(1)
+    await expect(page.locator('.chapter-story .tags').last()).toBeInViewport({ ratio: 1 })
+    if (year === 2024) {
+      await expect(page.locator('.era-caption')).toHaveCount(0)
+      await page.screenshot({ path: info.outputPath(`projects-summary-${width}.png`) })
+    }
     await advanceBeat(page)
   }
   await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:menu')
@@ -149,11 +172,11 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
       await expect(page.locator('#portfolio-menu')).toBeInViewport({ ratio: .7 })
       await expectClearOfHeader(page, '#hero-title')
     }
-    if (beat.endsWith(':read') && !beat.startsWith('projects:')) await expectClearOfHeader(page, `#${beat.split(':')[0]}`)
+    if (beat.endsWith(':read') && !beat.startsWith('projects:')) await expectClearOfHeader(page, `#${beat.split(':')[0]} .section-character-guide`)
     if (/projects:\d+:year/.test(beat)) {
       years.add((await page.locator('#career-panel').getAttribute('data-year'))!)
       await expect(page.getByRole('button', { name: 'Pause timeline', exact: true })).toHaveAttribute('aria-pressed', 'true')
-      await expectClearOfHeader(page, '.journey-controls')
+      await expect(page.locator('.chapter-story')).toContainText(/Citigroup|Verizon/)
     }
     await expect(page.getByRole('dialog')).not.toBeVisible()
     if (beat === 'experiments:read') await page.screenshot({ path: info.outputPath('beyond-work-story.png') })
@@ -162,7 +185,7 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
       await expect(page.getByTestId('movie-ending')).toHaveCount(0)
       await page.clock.runFor(200)
     } else await advanceBeat(page)
-    if (beat === 'projects:2026:year') await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:menu')
+    if (beat === 'projects:2026:read') await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:menu')
   }
   await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'movie:ending')
   expect(peeks).toEqual(['about', 'experience', 'projects', 'experiments', 'contact'])
@@ -319,6 +342,8 @@ test('movie and timeline pause together without a competing timeline timer', asy
   await expect(page.locator('#career-panel')).toHaveAttribute('data-year', year!)
   await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
   await page.clock.runFor(64)
+  await advanceBeat(page)
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'projects:2018:read')
   await advanceBeat(page)
   await expect(page.locator('#career-panel')).toHaveAttribute('data-year', '2019')
   await page.getByRole('button', { name: 'Pause timeline', exact: true }).click()

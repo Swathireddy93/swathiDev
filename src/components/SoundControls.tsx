@@ -6,10 +6,12 @@ export function SoundControls({ audio }: { audio: AudioManager }) {
   const [hintDismissed, setHintDismissed] = useState(false)
   const soundOn = !state.muted && state.status !== 'error'
   const label = soundOn ? 'Mute sound' : 'Unmute sound'
+  const hint = hintDismissed ? null : state.status === 'playing' && soundOn ? 'Mute to turn off music' : state.status === 'muted' ? 'Unmute to play music' : null
+  const toggle = () => { setHintDismissed(true); if (soundOn) audio.mute(); else audio.enable() }
   return (
     <div className={`sound-controls ${soundOn ? 'sound-is-on' : 'sound-is-off'}`} data-audio-status={state.status} data-last-cue={state.lastCue}>
-      {state.muted && !hintDismissed && state.status !== 'error' && <button type="button" className="sound-hint" onClick={() => { setHintDismissed(true); audio.enable() }}>Unmute to play music</button>}
-      <button className="sound-toggle" type="button" onClick={() => { setHintDismissed(true); if (soundOn) audio.mute(); else audio.enable() }}
+      {hint && <button type="button" className="sound-hint" onClick={toggle}>{hint}</button>}
+      <button className="sound-toggle" type="button" onClick={toggle}
         aria-label={label} title={label} aria-pressed={soundOn} aria-busy={state.status === 'loading'}>
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
           <path d="M4 9h4l5-4v14l-5-4H4z" />

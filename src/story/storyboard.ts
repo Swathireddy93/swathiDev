@@ -29,8 +29,10 @@ export function buildStoryBeats(): StoryBeat[] {
       beats.push({ id: `${chapter}:read`, chapter, kind: 'read', target: `#${chapter}` })
       continue
     }
+    beats.push({ id: 'projects:introduction', chapter, kind: 'read', target: '#projects .section-heading' })
     for (let year = experience.journey.firstYear; year <= experience.journey.lastYear; year++) {
       beats.push({ id: `projects:${year}:year`, chapter, kind: 'year', year, target: '.journey-controls' })
+      beats.push({ id: `projects:${year}:read`, chapter, kind: 'read', year, target: '.career-chapter' })
     }
   }
   beats.push(

@@ -5,6 +5,8 @@ export interface PersonalProject {
   name: string
   category: string
   tagline: string
+  introduction?: string
+  website?: string
   description: string
   detail: string
   technologies: readonly string[]
@@ -15,6 +17,7 @@ export const personalProjects: readonly PersonalProject[] = [
   {
     id: 'ritual', name: 'Ritual', category: 'Web Application',
     tagline: 'A quiet archive of food, light, timing and evidence.',
+    website: 'https://ssr-personal-cookbook.vercel.app/',
     description: 'Designed and developed a personalized wellness web application inspired by Ayurvedic principles and supported by scientific research. Ritual organizes daily routines, nutrition, ingredients, recipes and wellness practices into an intuitive, visually calming digital experience.',
     detail: 'Interactive timelines, ingredient exploration, searchable wellness routines and evidence-based insights bring the experience together.',
     technologies: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'shadcn/ui', 'Framer Motion'],
@@ -23,6 +26,7 @@ export const personalProjects: readonly PersonalProject[] = [
     repository: { url: profile.github, label: 'GitHub profile' },
     id: 'jada-bit', name: 'Jada.bit', category: 'Wearable Technology & Embedded Systems',
     tagline: 'Where wearable fashion meets programmable technology.',
+    introduction: 'Building Jada.bit brought me back to my bachelor’s in Electronics and Communication Engineering, reconnecting with embedded systems, microcontrollers and hardware–software integration.',
     description: 'Designed and built a programmable digital hair accessory featuring a circular 1.28-inch LCD display powered by an ESP32-S3 microcontroller.',
     detail: 'The rechargeable wearable combines embedded electronics with a compact, jewelry-inspired enclosure, allowing users to display custom pixel art, animations and personalized visuals.',
     technologies: ['ESP32-S3', 'C/C++', 'SPI LCD Display', 'Bluetooth / Wi-Fi', 'Li-Po Battery', 'Embedded Systems'],
