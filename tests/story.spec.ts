@@ -129,7 +129,7 @@ test('an existing section link takes priority over automatic playback', async ({
   await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'paused')
 })
 
-for (const width of [1440, 390]) test(`the movie plays every chapter and timeline year before returning to the menu at ${width}px`, async ({ page }, info) => {
+for (const width of [1440, 390]) test(`the movie plays every chapter then waves goodbye and loops through loading at ${width}px`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: 900 })
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
@@ -140,8 +140,7 @@ for (const width of [1440, 390]) test(`the movie plays every chapter and timelin
   await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'playing')
   const peeks: string[] = [], years = new Set<string>()
   for (let step = 0; step < 90; step++) {
-    const state = await page.locator(controls).getAttribute('data-story-status')
-    if (state === 'complete') break
+    if (await page.getByTestId('movie-ending').count()) break
     const beat = await page.locator(controls).getAttribute('data-story-beat') ?? ''
     if (beat.endsWith(':peek')) {
       const chapter = beat.split(':')[0]
@@ -158,22 +157,49 @@ for (const width of [1440, 390]) test(`the movie plays every chapter and timelin
     }
     await expect(page.getByRole('dialog')).not.toBeVisible()
     if (beat === 'experiments:read') await page.screenshot({ path: info.outputPath('beyond-work-story.png') })
-    await advanceBeat(page)
+    if (beat === 'contact:hold') {
+      await page.clock.runFor(4400)
+      await expect(page.getByTestId('movie-ending')).toHaveCount(0)
+      await page.clock.runFor(200)
+    } else await advanceBeat(page)
     if (beat === 'projects:2026:year') await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:menu')
   }
-  await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'complete')
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'movie:ending')
   expect(peeks).toEqual(['about', 'experience', 'projects', 'experiments', 'contact'])
   expect([...years]).toEqual(['2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'])
-  await expect(page.locator('.contact-email')).toBeInViewport()
+  const ending = page.getByTestId('movie-ending')
+  await expect(ending).toHaveCSS('background-color', 'rgb(0, 0, 0)')
+  await expect(ending.getByRole('heading', { name: 'THE END' })).toBeVisible()
+  await expect(ending.locator('.farewell-wave')).toHaveCount(1)
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
   expect(errors).toEqual([])
-  await page.screenshot({ path: info.outputPath(`story-complete-${width}.png`) })
-  const end = await page.evaluate(() => scrollY)
-  await page.clock.fastForward(120_000)
-  expect(await page.evaluate(() => scrollY)).toBe(end)
-  await page.getByRole('button', { name: 'Replay the movie', exact: true }).click()
-  await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'playing')
-  await expect(page.locator(controls)).toHaveAttribute('data-story-chapter', 'about')
+  await page.screenshot({ path: info.outputPath(`movie-ending-${width}.png`) })
+  await page.getByRole('button', { name: 'Pause the movie', exact: true }).click()
+  await expect(ending.locator('.farewell-wave')).toHaveCSS('animation-play-state', 'paused')
+  await page.clock.fastForward(10_000)
+  await expect(ending).toBeVisible()
+  if (width === 390) {
+    await page.keyboard.press('Escape')
+    await expect(ending).toHaveCount(0)
+    await expect(page.locator('.contact-email')).toBeInViewport()
+    await page.clock.fastForward(60_000)
+    await expect(page.locator('.app')).toHaveAttribute('data-phase', 'portfolio')
+    await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'paused')
+  } else {
+    const muted = await page.locator('.sound-toggle').getAttribute('aria-label')
+    await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
+    await page.clock.runFor(4400)
+    await expect(ending).toBeVisible()
+    await page.clock.runFor(700)
+    await expect(page.locator('.app')).toHaveAttribute('data-phase', 'loading')
+    await expect(page.getByTestId('loading-screen')).toBeVisible()
+    await expect(page.locator('.sound-toggle')).toHaveAttribute('aria-label', muted!)
+    await expect(ending).toHaveCount(0)
+    await page.clock.runFor(5000)
+    await expect(page.locator('.app')).toHaveAttribute('data-phase', 'playing')
+    await page.getByRole('button', { name: 'Skip intro', exact: true }).click()
+    await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'waiting')
+  }
 })
 
 test('manual wheel, touch, keyboard and menu choices interrupt without a later scroll jump', async ({ page }) => {
@@ -256,17 +282,24 @@ test('the settled landing holds for three seconds, then one hop leads directly i
   await expect(page.locator('.movie-hint')).toHaveCount(0)
 })
 
-test('the compact phone landing keeps the pause hint clear of all five circles', async ({ page }, info) => {
-  await page.setViewportSize({ width: 360, height: 740 })
+for (const width of [320, 360, 390, 1440]) test(`the vertical movie hint stays outside text and circles at ${width}px`, async ({ page }, info) => {
+  await page.setViewportSize({ width, height: width <= 360 ? 740 : 900 })
   await openStory(page)
   await expectClearOfHeader(page, '#hero-title')
   const hint = (await page.locator('.movie-hint').boundingBox())!
+  const intro = (await page.locator('.hero-introduction').boundingBox())!
+  await expect(page.locator('.movie-hint')).toHaveCSS('writing-mode', 'vertical-rl')
+  expect(hint.width).toBeLessThanOrEqual(18)
+  expect(hint.height).toBeGreaterThan(70)
+  expect(hint.x).toBeGreaterThanOrEqual(intro.x + intro.width)
+  expect(hint.x + hint.width).toBeLessThanOrEqual(width)
   for (const link of await page.locator('#portfolio-menu').getByRole('link').all()) {
     await expect(link).toBeInViewport({ ratio: 1 })
     const circle = (await link.boundingBox())!
-    expect(circle.y + circle.height).toBeLessThanOrEqual(hint.y - 8)
+    const intersects = hint.x < circle.x + circle.width && hint.x + hint.width > circle.x && hint.y < circle.y + circle.height && hint.y + hint.height > circle.y
+    expect(intersects).toBe(false)
   }
-  await page.screenshot({ path: info.outputPath('compact-movie-landing.png') })
+  await page.screenshot({ path: info.outputPath(`vertical-movie-hint-${width}.png`) })
 })
 
 test('movie and timeline pause together without a competing timeline timer', async ({ page }) => {

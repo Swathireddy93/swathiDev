@@ -11,7 +11,7 @@ export type StoryChapter = typeof storyChapters[number]['id']
 export interface StoryBeat {
   id: string
   chapter: StoryChapter
-  kind: 'menu' | 'peek' | 'enter' | 'read' | 'year'
+  kind: 'menu' | 'peek' | 'enter' | 'read' | 'year' | 'hold' | 'ending'
   target?: string
   year?: number
 }
@@ -33,5 +33,9 @@ export function buildStoryBeats(): StoryBeat[] {
       beats.push({ id: `projects:${year}:year`, chapter, kind: 'year', year, target: '.journey-controls' })
     }
   }
+  beats.push(
+    { id: 'contact:hold', chapter: 'contact', kind: 'hold' },
+    { id: 'movie:ending', chapter: 'contact', kind: 'ending' },
+  )
   return beats
 }

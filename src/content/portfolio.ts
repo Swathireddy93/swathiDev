@@ -23,7 +23,7 @@ export const profile = {
   location: 'San Francisco Bay Area',
   email: 'swathisreddy.work@gmail.com',
   linkedin: 'https://www.linkedin.com/in/swathishivashankar1993',
-  github: 'https://github.com/Swathireddy93/',
+  github: null as string | null,
   resume: `${import.meta.env.BASE_URL}swathi-reddy-resume.pdf`,
 }
 

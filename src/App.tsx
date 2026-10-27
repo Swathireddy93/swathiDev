@@ -30,6 +30,7 @@ export default function App() {
   const [phase, setPhase] = useState<IntroPhase>(() => prefersReducedMotion() || !graphics ? 'portfolio' : 'loading')
   const [fading, setFading] = useState(false)
   const [sceneStage, setSceneStage] = useState('mountains')
+  const [introCycle, setIntroCycle] = useState(0)
   const assetsReady = useRef(false)
   const firstFrameReady = useRef(false)
   const finish = useCallback(() => {
@@ -43,7 +44,7 @@ export default function App() {
   const onReady = useCallback(() => { assetsReady.current = true; revealWhenReady() }, [revealWhenReady])
   const onRendered = useCallback(() => { firstFrameReady.current = true; revealWhenReady() }, [revealWhenReady])
   const onFailure = useCallback(() => { setFallback(true); finish() }, [finish])
-  const { assets, progress } = useAssets((phase === 'loading' || phase === 'playing') && !reducedMotion && graphics, onReady, onFailure)
+  const { assets, progress } = useAssets((phase === 'loading' || phase === 'playing') && !reducedMotion && graphics, onReady, onFailure, introCycle)
   useEffect(() => {
     if (phase !== 'loading' || !assets) return
     const timeout = window.setTimeout(() => { if (!firstFrameReady.current) onFailure() }, experience.assetsTimeoutMs)
@@ -52,16 +53,24 @@ export default function App() {
   const onFade = useCallback(() => setFading(true), [])
   const startFlight = useCallback(() => { setFading(false); setPhase('flight') }, [])
   const land = useCallback(() => { setSceneStage('landed'); finish() }, [finish])
-  const replay = useCallback(() => {
+  const resetIntroduction = useCallback((focus: boolean) => {
     if (reducedMotion || fallback) return
     assetsReady.current = false
     firstFrameReady.current = false
     setFading(false)
     setSceneStage('mountains')
+    setIntroCycle(value => value + 1)
     setPhase('loading')
     window.scrollTo({ top: 0, behavior: 'instant' })
-    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.skip-intro')?.focus())
+    if (focus) requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.skip-intro')?.focus())
   }, [reducedMotion, fallback])
+  const replay = useCallback(() => resetIntroduction(true), [resetIntroduction])
+  const endMovie = useCallback(() => setPhase('ending'), [])
+  const loopMovie = useCallback(() => {
+    history.replaceState(history.state, '', location.pathname + location.search)
+    audio.restartMusic()
+    resetIntroduction(false)
+  }, [audio, resetIntroduction])
 
   useEffect(() => {
     audio.prepare()
@@ -81,10 +90,10 @@ export default function App() {
   }, [audio])
 
   return (
-    <div className={`app phase-${phase}`} data-phase={phase} data-scene={sceneStage}>
+    <div className={`app phase-${phase}${phase === 'ending' ? ' phase-portfolio' : ''}`} data-phase={phase} data-scene={sceneStage}>
       <a className="skip-content" href="#portfolio" onClick={phase !== 'portfolio' ? finish : undefined}>Skip to portfolio content</a>
-      <Header portfolio={phase === 'portfolio'} onSkip={finish} />
-      {phase !== 'portfolio' && <section className={`intro ${fading ? 'is-fading' : ''}`} aria-label="A pixel-art introduction" data-testid="intro">
+      <Header portfolio={phase === 'portfolio' || phase === 'ending'} onSkip={finish} />
+      {phase !== 'portfolio' && phase !== 'ending' && <section className={`intro ${fading ? 'is-fading' : ''}`} aria-label="A pixel-art introduction" data-testid="intro">
         {(phase === 'loading' || phase === 'playing') && assets && <SceneBoundary onFailure={onFailure}>
           <Suspense fallback={<div className="scene-poster" aria-hidden="true" />}>
             <MountainWorld assets={assets} playing={phase === 'playing'} audio={audio}
@@ -96,9 +105,9 @@ export default function App() {
         {phase === 'loading' && <LoadingScreen progress={progress} />}
         {phase === 'playing' && <TelevisionSceneReveal />}
         {!!assets?.failures.length && <p className="asset-notice scene-notice" role="status">Some scenery is unavailable. Skip intro to view the portfolio.</p>}
-        <p className="sr-only" aria-live="polite">{phase !== 'loading' ? `Introduction: ${sceneStage}.` : ''}</p>
+        <p className="sr-only" aria-live="polite">{phase !== 'loading' ? sceneStage === 'thought' ? experience.introThought.lines.join(' ') : `Introduction: ${sceneStage}.` : ''}</p>
       </section>}
-      {phase === 'portfolio' && <Portfolio audio={audio} onReplay={replay} reducedMotion={reducedMotion || fallback} fallback={fallback} />}
+      {(phase === 'portfolio' || phase === 'ending') && <Portfolio audio={audio} onReplay={replay} reducedMotion={reducedMotion || fallback} fallback={fallback} ending={phase === 'ending'} onMovieEnd={endMovie} onMovieLoop={loopMovie} onMovieExit={finish} />}
       <SoundControls audio={audio} />
     </div>
   )

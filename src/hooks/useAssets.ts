@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import type { LoadedAssets } from '../assets/loadAssets'
 import { experience } from '../config/experience'
 
-export function useAssets(enabled: boolean, onReady: () => void, onFailure: () => void) {
-  const [progress, setProgress] = useState(0)
+export function useAssets(enabled: boolean, onReady: () => void, onFailure: () => void, cycle = 0) {
+  const [loading, setLoading] = useState({ progress: 0, cycle })
   const [assets, setAssets] = useState<LoadedAssets | null>(null)
   useEffect(() => {
     if (!enabled) return
@@ -18,7 +18,7 @@ export function useAssets(enabled: boolean, onReady: () => void, onFailure: () =
       const now = performance.now()
       const paced = Math.floor(Math.min(1, (now - startedAt) / experience.loading.minimumMs) * 100)
       const visible = Math.min(loadedProgress, paced, result ? 100 : 99)
-      setProgress(visible)
+      setLoading({ progress: visible, cycle })
       if (visible === 100 && result) {
         completedAt ??= now
         if (now - completedAt >= experience.loading.completeHoldMs) {
@@ -41,6 +41,6 @@ export function useAssets(enabled: boolean, onReady: () => void, onFailure: () =
         onFailure()
       })
     return () => { active = false; window.clearInterval(timer) }
-  }, [enabled, onReady, onFailure])
-  return { assets, progress }
+  }, [enabled, onReady, onFailure, cycle])
+  return { assets, progress: loading.cycle === cycle ? loading.progress : 0 }
 }

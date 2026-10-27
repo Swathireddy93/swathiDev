@@ -80,7 +80,7 @@ test('the automatic character, close-up, POV flight and rooftop arrival form one
   await page.screenshot({ path: info.outputPath('girl-peeking.png') })
   await expect(page.locator(sound)).toHaveAttribute('data-last-cue', 'jump')
   await expect(page.locator(sound)).toHaveAttribute('data-last-cue', 'land')
-  await expect(page.locator('.app')).toHaveAttribute('data-scene', 'approaching')
+  await expect(page.locator('.app')).toHaveAttribute('data-scene', 'approaching', { timeout: 20_000 })
   await page.waitForTimeout(2200)
   await page.screenshot({ path: info.outputPath('character-close-up.png') })
   await expect(page.locator('.app')).toHaveAttribute('data-scene', 'pov')
@@ -355,10 +355,11 @@ test('About Me includes the supplied story with emphasis and the résumé link',
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
   const about = page.locator('#about .about-copy')
-  await expect(about.locator('p')).toHaveCount(6)
-  await expect(about).toContainText("I'm Swathi, a developer, a curious mind, and someone who loves turning ideas into things that actually exist.")
-  await expect(about.locator('em')).toHaveText('"What if?"')
-  await expect(about.locator('strong')).toHaveText('I believe the most interesting things happen when curiosity meets the ability to build.')
+  await expect(about.locator('p')).toHaveCount(7)
+  await expect(about.locator('p').first()).toHaveText("Hey, I'm Swathi!")
+  await expect(about).toContainText("But my curiosity doesn't really clock out after work.")
+  await expect(about.locator('em')).toHaveText('"Wait, what if I tried this?"')
+  await expect(about.locator('strong')).toHaveText("So, this little corner of the internet is a mix of what I've learned, what I've built and everything I'm still curious about.")
   await expect(about.getByRole('link', { name: 'The full story, on my résumé' })).toHaveAttribute('href', /swathi-reddy-resume.pdf$/)
 })
 
@@ -518,16 +519,21 @@ test('the Projects timeline repeats a planted dab and restarts when opened from 
 })
 
 
-test('contact puts a smaller character right of a two-line invitation with working GitHub links', async ({ page }, info) => {
+test('contact keeps its two-line invitation and all GitHub entries are non-interactive placeholders', async ({ page }, info) => {
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()) })
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.goto('/')
-  const profile = 'https://github.com/Swathireddy93/'
-  await expect(page.locator('.personal-project-jada-bit .project-repository a')).toHaveAttribute('href', profile)
-  await expect(page.locator('#github-projects a')).toHaveAttribute('href', profile)
-  await expect(page.locator('#contact').getByRole('link', { name: 'GitHub', exact: false })).toHaveAttribute('href', profile)
+  await expect(page.locator('a[href*="github.com"]')).toHaveCount(0)
+  await expect(page.getByRole('link', { name: /GitHub/ })).toHaveCount(0)
+  await expect(page.locator('.github-placeholder')).toHaveCount(3)
+  for (const section of ['.personal-project-jada-bit .project-repository', '#github-projects', '#contact']) {
+    const placeholder = page.locator(`${section} .github-placeholder`)
+    await expect(placeholder).toHaveText(/GitHub link coming soon/)
+    await expect(placeholder).not.toHaveAttribute('href')
+    await expect(placeholder).not.toHaveAttribute('tabindex')
+  }
   await page.locator('#contact-title').scrollIntoViewIfNeeded()
   const verifyPortrait = async () => {
     const portrait = page.locator('.thinking-figure')

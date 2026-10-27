@@ -1,12 +1,13 @@
 import { Application, extend, useApplication } from '@pixi/react'
 import { Container, Sprite } from 'pixi.js'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import type { LoadedAssets } from '../assets/loadAssets'
 import { sceneLayers } from '../assets/manifest'
 import type { AudioManager } from '../audio/AudioManager'
 import { SceneController } from '../animation/SceneController'
-import { positionCamera, type CameraState } from '../animation/camera'
+import { positionCamera, positionThoughtCloud, type CameraState } from '../animation/camera'
 import { experience } from '../config/experience'
+import { IntroThoughtCloud } from '../components/IntroThoughtCloud'
 
 extend({ Container, Sprite })
 
@@ -21,7 +22,9 @@ interface Props {
   onRendered: () => void
 }
 
-function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure, onRendered }: Props) {
+interface ThoughtRefs { cloud: RefObject<HTMLDivElement | null>; text: RefObject<HTMLSpanElement | null> }
+
+function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure, onRendered, cloud, text }: Props & ThoughtRefs) {
   const { app } = useApplication()
   const root = useRef<Container>(null)
   const character = useRef<Container>(null)
@@ -36,9 +39,12 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure,
       const sprite = layers.current[layer.id]
       if (sprite) sprite.x = camera.current.x * (1 - layer.depth) * 0.8
     }
+    if (cloud.current && character.current) {
+      positionThoughtCloud(cloud.current, root.current, character.current, app.screen.width)
+    }
     app.render()
     return true
-  }, [app])
+  }, [app, cloud])
 
   useLayoutEffect(() => {
     const renderer = app.renderer
@@ -55,12 +61,13 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure,
   }, [app, draw, onFailure, onRendered])
 
   useEffect(() => {
-    if (!playing || !character.current || !portrait.current) return
+    if (!playing || !character.current || !portrait.current || !cloud.current || !text.current) return
     const controller = new SceneController({
       camera: camera.current,
       character: character.current,
       portrait: portrait.current,
       poses: assets.textures,
+      thought: { element: cloud.current, text: text.current },
       audio, onComplete, onFade, onStage, onFrame: draw,
     })
     controller.play()
@@ -73,7 +80,7 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure,
       document.removeEventListener('visibilitychange', visibility)
       controller.dispose()
     }
-  }, [assets, playing, audio, draw, onComplete, onFade, onStage])
+  }, [assets, playing, audio, draw, onComplete, onFade, onStage, cloud, text])
 
   return (
     <pixiContainer ref={root} eventMode="none">
@@ -94,6 +101,8 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure,
 export default function MountainWorld(props: Props) {
   const { onRendered: notifyRendered } = props
   const parent = useRef<HTMLDivElement>(null)
+  const cloud = useRef<HTMLDivElement>(null)
+  const text = useRef<HTMLSpanElement>(null)
   const [ready, setReady] = useState(false)
   const onInit = useCallback(() => setReady(true), [])
   const onRendered = useCallback(() => {
@@ -106,8 +115,9 @@ export default function MountainWorld(props: Props) {
     <div className="pixi-world" ref={parent} aria-hidden="true" data-render-ready="false">
       <Application resizeTo={parent} autoStart={false} antialias={false} roundPixels onInit={onInit}
         resolution={resolution} autoDensity preference="webgl" backgroundColor={0x172522}>
-        {ready ? <World {...props} onRendered={onRendered} /> : null}
+        {ready ? <World {...props} onRendered={onRendered} cloud={cloud} text={text} /> : null}
       </Application>
+      <IntroThoughtCloud cloud={cloud} text={text} />
     </div>
   )
 }

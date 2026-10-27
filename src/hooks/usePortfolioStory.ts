@@ -2,16 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { initialStory, StoryPlayer, type StorySnapshot } from '../story/StoryPlayer'
 import type { StoryChapter } from '../story/storyboard'
 
-export function usePortfolioStory({ reducedMotion, navigate, year }: {
+export function usePortfolioStory({ reducedMotion, navigate, year, ending, restart }: {
   reducedMotion: boolean
   navigate: (chapter: StoryChapter) => void
   year: (year: number) => void
+  ending: () => void
+  restart: () => void
 }) {
   const [snapshot, setSnapshot] = useState<StorySnapshot>(initialStory)
   const player = useRef<StoryPlayer | null>(null)
   useEffect(() => {
     if (reducedMotion) return
-    const controller = new StoryPlayer({ snapshot: setSnapshot, navigate, year })
+    const controller = new StoryPlayer({ snapshot: setSnapshot, navigate, year, ending, restart })
     player.current = controller
     if (location.hash && !['#top', '#portfolio-menu'].includes(location.hash) && document.getElementById(location.hash.slice(1))) controller.pause()
     const observer = new IntersectionObserver(([entry]) => controller.setMenuVisible(entry.isIntersecting), { threshold: .25 })
@@ -34,7 +36,7 @@ export function usePortfolioStory({ reducedMotion, navigate, year }: {
       document.removeEventListener('visibilitychange', visibility)
       window.removeEventListener('resize', resize)
     }
-  }, [reducedMotion, navigate, year])
+  }, [reducedMotion, navigate, year, ending, restart])
   return {
     snapshot: reducedMotion ? { ...initialStory, status: 'off' as const } : snapshot,
     pause: () => player.current?.pause(),

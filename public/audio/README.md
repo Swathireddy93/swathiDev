@@ -27,3 +27,7 @@ in `src/audio/AudioManager.ts`; timing and mix levels live in `src/config/experi
 Background music starts at 0:45 and loops from that point to the end of the supplied track (4:02.364). Mute/unmute preserves playback position.
 
 The returning menu character uses a quieter, lower-pitched variation of the original liquid pop on each peek. It does not duck the music and respects mute and reduced motion.
+
+`thought-type.wav` (75ms) and `thought-swoosh.wav` (500ms) are original synthesized sounds for the opening character's thought cloud, reproducible with `python3 scripts/generate_thought_audio.py`. Each typewriter key blends a soft hammer strike, a damped wooden resonance and a quieter spring return. The master intro timeline synchronizes keys with non-space characters and plays one swoosh when the cloud fades. Both respect mute; skipping or disposing the intro stops them. No paid service or external recording is used.
+
+`camera-shutter.wav` is an original 180ms, mono, 22.05kHz synthesized double-curtain click (about 8KB). Recreate it with `python3 scripts/generate_shutter.py`. It accompanies the circular photography image's diamond flash every three seconds while the image is visible, respects mute and reduced motion, and leaves the background music level unchanged. No external recording or paid service is used.

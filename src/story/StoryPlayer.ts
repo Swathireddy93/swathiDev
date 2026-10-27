@@ -15,6 +15,8 @@ interface StoryCallbacks {
   snapshot: (snapshot: StorySnapshot) => void
   navigate: (chapter: StoryChapter) => void
   year: (year: number) => void
+  ending: () => void
+  restart: () => void
 }
 const clamp = (value: number, max: number) => Math.max(0, Math.min(value, max))
 const ease = (p: number) => p < .5 ? 4 * p ** 3 : 1 - (-2 * p + 2) ** 3 / 2
@@ -85,6 +87,7 @@ export class StoryPlayer {
     this.state = { status: 'playing', chapter: beat.chapter, beat: beat.id, peek: beat.kind === 'peek' ? beat.chapter : null, year: beat.year }
     if (beat.kind === 'enter') this.callbacks.navigate(beat.chapter)
     if (beat.kind === 'year') this.callbacks.year(beat.year!)
+    if (beat.kind === 'ending') this.callbacks.ending()
     this.emit()
   }
   private target(beat: StoryBeat) { return beat.target ? document.querySelector<HTMLElement>(beat.target) : null }
@@ -102,6 +105,8 @@ export class StoryPlayer {
   private measure(beat: StoryBeat) {
     this.from = window.scrollY
     const timing = experience.story
+    if (beat.kind === 'hold') return timing.contactHoldMs
+    if (beat.kind === 'ending') return timing.endingMs
     if (beat.kind === 'peek') return timing.peekMs
     if (beat.kind === 'year') return experience.journey.hopMs + (Math.abs(this.destination(beat) - this.from) > 1 ? timing.yearMs : 0)
     if (beat.kind !== 'read') return timing.travelMs
@@ -133,7 +138,9 @@ export class StoryPlayer {
         if (this.elapsed >= this.duration) {
           this.index++
           if (this.index === this.beats.length) {
-            this.halt(); this.state = { ...this.state, status: 'complete', beat: 'complete', peek: null }; this.emit(); return
+            this.halt(); this.state = { ...this.state, status: 'complete', beat: 'complete', peek: null }; this.emit()
+            this.callbacks.restart()
+            return
           }
           this.begin()
         }
