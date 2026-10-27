@@ -11,11 +11,13 @@ export function PhotographySection({ audio, reducedMotion }: { audio: AudioManag
     const element = photo.current
     if (!element || !imageLoaded || imageFailed || reducedMotion) return
     let visible = false
+    let lastFlash = -Infinity
     let repeat: ReturnType<typeof setTimeout> | undefined
     let release: ReturnType<typeof setTimeout> | undefined
     const clear = () => { clearTimeout(repeat); clearTimeout(release); element.setAttribute('data-flash-active', 'false') }
     const pulse = () => {
       if (!visible || document.hidden) return
+      lastFlash = performance.now()
       element.setAttribute('data-flash-active', 'true')
       audio.cue('shutter')
       release = setTimeout(() => element.setAttribute('data-flash-active', 'false'), experience.photography.flashMs)
@@ -23,10 +25,15 @@ export function PhotographySection({ audio, reducedMotion }: { audio: AudioManag
     }
     const update = () => {
       clear()
-      if (visible && !document.hidden) pulse()
+      // Let the image arrive before flashing. Viewport/threshold changes must
+      // not restart the shutter repeatedly while the movie scrolls past it.
+      if (visible && !document.hidden) repeat = setTimeout(pulse,
+        Math.max(350, experience.photography.intervalMs - (performance.now() - lastFlash)))
     }
     const observer = new IntersectionObserver(([entry]) => {
-      visible = entry.isIntersecting && entry.intersectionRatio >= .65
+      const nextVisible = entry.isIntersecting && entry.intersectionRatio >= .65
+      if (nextVisible === visible) return
+      visible = nextVisible
       update()
     }, { threshold: .65 })
     observer.observe(element)

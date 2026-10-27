@@ -38,6 +38,27 @@ async function watchFlash(page: Page) {
 const flashes = (page: Page) => page.locator('.photography-photo').evaluate(element => (element as FlashElement).testFlashEvents.filter(value => value === 'true').length)
 const shutters = (page: Page) => page.evaluate(() => Number(Reflect.get(window, 'testShutterStarts')))
 
+test('mobile photo arrival settles before flashing and re-entry cannot retrigger the shutter rapidly', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 740 })
+  await openPortfolio(page)
+  await watchFlash(page)
+  const photo = page.locator('.photography-photo')
+  await photo.evaluate(element => window.scrollTo({ top: window.scrollY + element.getBoundingClientRect().top - 200, behavior: 'instant' }))
+  await page.waitForTimeout(200)
+  expect(await flashes(page)).toBe(0)
+  await expect.poll(() => flashes(page)).toBe(1)
+  const before = await shutters(page)
+  for (let step = 0; step < 3; step++) {
+    await page.locator('#contact').evaluate(element => element.scrollIntoView({ behavior: 'instant' }))
+    await page.waitForTimeout(80)
+    await photo.evaluate(element => window.scrollTo({ top: window.scrollY + element.getBoundingClientRect().top - 200, behavior: 'instant' }))
+    await page.waitForTimeout(80)
+  }
+  expect(await flashes(page)).toBe(1)
+  expect(await shutters(page)).toBe(before)
+  await expect.poll(() => flashes(page), { timeout: 4000 }).toBe(2)
+})
+
 test('the diamond lens flash and audible shutter repeat every three seconds, respecting mute and visibility', async ({ page }) => {
   await openPortfolio(page)
   await watchFlash(page)
