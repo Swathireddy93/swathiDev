@@ -1,9 +1,13 @@
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { AudioManager } from '../audio/AudioManager'
 
 export function SoundControls({ audio }: { audio: AudioManager }) {
   const state = useSyncExternalStore(audio.subscribe, audio.snapshot)
   const [hintDismissed, setHintDismissed] = useState(false)
+  useEffect(() => {
+    const timer = window.setTimeout(() => setHintDismissed(true), 3500)
+    return () => window.clearTimeout(timer)
+  }, [])
   const soundOn = !state.muted && state.status !== 'error'
   const label = soundOn ? 'Mute sound' : 'Unmute sound'
   const hint = hintDismissed ? null : state.status === 'playing' && soundOn ? 'Mute to turn off music' : state.status === 'muted' ? 'Unmute to play music' : null
