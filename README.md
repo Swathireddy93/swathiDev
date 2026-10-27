@@ -230,6 +230,13 @@ it does not know about project content or routing.
   the first click/Enter/Space retries, or the visitor can use the speaker icon.
   Autoplay is attempted, not guaranteed or bypassed. Real file/load errors remain
   visible and retryable.
+  Music now uses `LoopingMusic`, a native HTML audio element with `loop=true`,
+  rather than Howler's timer-driven HTML5 sprite rollover. The derived
+  `portfolio-background-loop.mp3` contains the original track from 0:45 to its end;
+  each native loop returns to that excerpt's local zero without another play call
+  or volume fade. The supplied original file remains intact. Howler still owns
+  short effects. The mobile regression crosses the real media endpoint twice with
+  JavaScript timers paused and checks mute/unmute.
 - The speaker is available during loading too. It is an 18px icon with a transparent 44px tap target,
   without a volume slider or cancel/X icon. Explicit mute cancels automatic retry.
   Music continues into the portfolio and across replay; resources and timers are

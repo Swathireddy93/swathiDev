@@ -1,5 +1,6 @@
 import { Howl, Howler } from 'howler'
 import { experience } from '../config/experience'
+import { LoopingMusic } from './LoopingMusic'
 
 type Cue = 'mountain' | 'jump' | 'land' | 'bubble' | 'glass' | 'peek' | 'shutter' | 'type' | 'swoosh'
 interface AudioState {
@@ -10,7 +11,7 @@ interface AudioState {
   lastCue: '' | Exclude<Cue, 'mountain'>
 }
 const cues = {
-  mountain: { src: `${import.meta.env.BASE_URL}audio/portfolio-background.mp3`, loop: true },
+  mountain: { src: `${import.meta.env.BASE_URL}audio/portfolio-background-loop.mp3`, loop: true },
   jump: { src: `${import.meta.env.BASE_URL}audio/temporary-jump.wav`, loop: false },
   glass: { src: `${import.meta.env.BASE_URL}audio/glass-reveal.wav`, loop: false },
   peek: { src: `${import.meta.env.BASE_URL}audio/menu-bubble.wav`, loop: false },
@@ -22,7 +23,7 @@ const cues = {
 } satisfies Record<Cue, { src: string; loop: boolean }>
 
 export class AudioManager {
-  private sounds = new Map<Cue, Howl>()
+  private sounds = new Map<Cue, Howl | LoopingMusic>()
   private listeners = new Set<() => void>()
   private active = false
   private ambientId: number | undefined
@@ -65,39 +66,48 @@ export class AudioManager {
   resumeOnInteraction = () => {
     if (this.autoplayPending) this.enable()
   }
+  private sound(cue: 'mountain'): LoopingMusic
+  private sound(cue: Exclude<Cue, 'mountain'>): Howl
   private sound(cue: Cue) {
     let sound = this.sounds.get(cue)
     if (!sound) {
-      const { src, loop } = cues[cue]
-      sound = new Howl({
-        src: [src], loop, volume: 0,
-        // Loop only the selected portion of the supplied track, including on replay.
-        sprite: cue === 'mountain' ? { portfolio: [experience.audio.musicStartSeconds * 1000,
-          (experience.audio.musicEndSeconds - experience.audio.musicStartSeconds) * 1000, true] } : undefined,
-        // Stream the full music track; keep short effects on Web Audio.
-        html5: cue === 'mountain', preload: true,
-        onloaderror: () => {
-          sound?.unload()
-          this.sounds.delete(cue)
-          if (cue === 'mountain') this.ambientId = undefined
-          this.fail(cue)
-        },
-        onplayerror: () => {
-          if (cue === 'mountain' && this.autoplayPending) {
-            this.update({ muted: true, status: 'muted', message: '' })
-          } else this.fail(cue)
-        },
-        onunlock: () => {
-          if (cue === 'mountain' && sound) this.retryAfterUnlock(sound)
-        },
-        onplay: () => {
-          if (!this.active) { sound?.stop(); return }
-          if (cue === 'mountain') {
+      if (cue === 'mountain') {
+        sound = new LoopingMusic(cues.mountain.src, {
+          onplay: () => {
+            if (!this.active) { sound?.stop(); return }
             this.autoplayPending = false
             sound?.mute(this.state.muted)
             sound?.fade(0, this.state.volume, 700)
             this.update({ status: this.state.muted ? 'muted' : 'playing', message: '' })
-          } else this.update({ lastCue: cue })
+          },
+          onplayerror: error => {
+            if (this.autoplayPending && error instanceof DOMException && error.name === 'NotAllowedError' && this.state.status !== 'error') this.update({ muted: true, status: 'muted', message: '' })
+            else this.fail('mountain')
+          },
+          onloaderror: () => {
+            if (!this.active) return
+            this.autoplayPending = false
+            this.update({ muted: true, status: 'error', message: 'Sound couldn’t start. Tap the speaker to try again.' })
+          },
+        })
+        this.sounds.set(cue, sound)
+        return sound
+      }
+      const { src, loop } = cues[cue]
+      sound = new Howl({
+        src: [src], loop, volume: 0,
+        html5: false, preload: true,
+        onloaderror: () => {
+          sound?.unload()
+          this.sounds.delete(cue)
+          this.fail(cue)
+        },
+        onplayerror: () => {
+          this.fail(cue)
+        },
+        onplay: () => {
+          if (!this.active) { sound?.stop(); return }
+          this.update({ lastCue: cue })
         },
       })
       this.sounds.set(cue, sound)
@@ -109,10 +119,10 @@ export class AudioManager {
       this.update({ status: 'error', message: 'Sound couldn’t start. Tap the speaker to try again.' })
     }
   }
-  private retryAfterUnlock(sound: Howl) {
+  private retryAfterUnlock(sound: Howl | LoopingMusic) {
     if (!this.active || this.state.muted || this.state.status !== 'error' || this.sounds.get('mountain') !== sound) return
     this.update({ status: 'loading', message: '' })
-    this.ambientId = sound.play(this.ambientId ?? 'portfolio')
+    this.ambientId = sound.play(this.ambientId)
   }
   /** Call directly inside a click/keyboard event, before any asynchronous work. */
   enable = () => {
@@ -134,7 +144,7 @@ export class AudioManager {
     }
     this.sounds.forEach((sound) => sound.mute(false))
     ambient.volume(this.state.volume)
-    if (!ambient.playing(this.ambientId)) this.ambientId = ambient.play(this.ambientId ?? 'portfolio')
+    if (!ambient.playing(this.ambientId)) this.ambientId = ambient.play(this.ambientId)
     else this.update({ status: 'playing' })
   }
   mute = () => {
@@ -147,7 +157,7 @@ export class AudioManager {
   }
   /** Restart the selected music segment without changing mute or requesting playback. */
   restartMusic = () => {
-    if (this.active && this.ambientId !== undefined) this.sounds.get('mountain')?.seek(experience.audio.musicStartSeconds, this.ambientId)
+    if (this.active && this.ambientId !== undefined) this.sounds.get('mountain')?.seek(0, this.ambientId)
   }
   stopCue = (cue: Exclude<Cue, 'mountain'>) => { this.sounds.get(cue)?.stop() }
   cue = (cue: Exclude<Cue, 'mountain'>, index = 0) => {

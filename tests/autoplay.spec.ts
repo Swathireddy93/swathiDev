@@ -24,7 +24,8 @@ test('music actually plays while critical scene assets are still loading', async
     await expect(page.getByTestId('loading-screen')).toBeVisible()
     await expect(page.locator('.sound-controls')).toHaveAttribute('data-audio-status', 'playing')
     await expect(page.getByRole('button', { name: 'Mute sound' })).toBeVisible()
-    await expect(page.locator('html')).toHaveAttribute('data-music-start', '45')
+    // The loop asset is pre-trimmed from 0:45, so its local start is zero.
+    await expect(page.locator('html')).toHaveAttribute('data-music-start', '0')
     expect(Number(await page.locator('html').getAttribute('data-music-volume'))).toBeGreaterThan(0)
     await expect(page.locator('.sound-controls')).toHaveClass(/sound-is-on/)
     const hint = page.getByRole('button', { name: 'Mute to turn off music', exact: true })

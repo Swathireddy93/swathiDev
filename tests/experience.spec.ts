@@ -13,7 +13,7 @@ test.beforeEach(async ({ page }) => {
     }, true)
     const play = HTMLMediaElement.prototype.play
     HTMLMediaElement.prototype.play = function () {
-      if (this.src.includes('portfolio-background.mp3') && !permitted) {
+      if (this.src.includes('portfolio-background-loop.mp3') && !permitted) {
         return Promise.reject(new DOMException('A user gesture is required.', 'NotAllowedError'))
       }
       return play.call(this)
@@ -31,7 +31,7 @@ async function skipToPortfolio(page: import('@playwright/test').Page) {
 }
 
 test('the supplied music supports byte-range streaming', async ({ request }) => {
-  const response = await request.get('/audio/portfolio-background.mp3', { headers: { Range: 'bytes=0-1023' } })
+  const response = await request.get('/audio/portfolio-background-loop.mp3', { headers: { Range: 'bytes=0-1023' } })
   expect(response.status()).toBe(206)
   expect(response.headers()['content-type']).toContain('audio/mpeg')
   expect(response.headers()['content-range']).toMatch(/^bytes 0-1023\/\d+$/)
@@ -220,10 +220,10 @@ test('a browser without WebGL receives the static city portfolio', async ({ page
 })
 
 test('a failed music request can be retried without blocking navigation', async ({ page }) => {
-  await page.route('**/audio/portfolio-background.mp3', route => route.fulfill({ status: 404, body: 'not found' }))
+  await page.route('**/audio/portfolio-background-loop.mp3', route => route.fulfill({ status: 404, body: 'not found' }))
   await page.goto('/')
   await expect(page.locator(sound)).toHaveAttribute('data-audio-status', 'error')
-  await page.unroute('**/audio/portfolio-background.mp3')
+  await page.unroute('**/audio/portfolio-background-loop.mp3')
   await page.getByRole('button', { name: 'Unmute sound' }).click()
   await expect(page.locator(sound)).toHaveAttribute('data-audio-status', 'playing')
   await page.getByRole('button', { name: 'Skip intro' }).click()
@@ -260,12 +260,12 @@ test.describe('touchscreen journey', () => {
   test('muting during a slow automatic audio download remains muted on load', async ({ page }) => {
     let release!: () => void
     const held = new Promise<void>(resolve => { release = resolve })
-    await page.route('**/audio/portfolio-background.mp3', async route => { await held; await route.continue() })
+    await page.route('**/audio/portfolio-background-loop.mp3', async route => { await held; await route.continue() })
     try {
       await page.goto('/')
       await expect(page.locator(sound)).toHaveAttribute('data-audio-status', 'loading')
       await page.getByRole('button', { name: 'Mute sound' }).tap()
-      const loaded = page.waitForResponse('**/audio/portfolio-background.mp3')
+      const loaded = page.waitForResponse('**/audio/portfolio-background-loop.mp3')
       release(); await loaded
       await expect(page.locator(sound)).toHaveAttribute('data-audio-status', 'muted')
       await page.getByRole('button', { name: 'Skip intro' }).tap()
