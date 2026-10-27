@@ -1,0 +1,24 @@
+{
+  "fps": 25,
+  "duration": 2.4,
+  "sourceCanvas": 128,
+  "exportCanvas": 512,
+  "nearestNeighborScale": 4,
+  "blinkWindows": [
+    [
+      0.8,
+      0.92
+    ],
+    [
+      1.08,
+      1.2
+    ]
+  ],
+  "waveKeyframes": "@keyframes farewell-wave { 0%, 100% { transform: rotate(-8deg); } 25%, 75% { transform: rotate(12deg); } 50% { transform: rotate(-12deg); } }",
+  "sources": {
+    "src/components/PixelFigure.tsx": "3e6cce5f8515bc9d2eaa6bfacd62d1375f338d5e1005d23f12e361104092cacd",
+    "src/theme/journey.css": "79c8e2c3dd2dd6392cc54e27de831cf987b1e15a44f3310f2d8779665c3ae68b",
+    "public/assets/temporary/character-neutral.png": "b1e88f169993954048fd342defb603105c8c435f4f05aae4777fb5731eeb7f43",
+    "public/assets/temporary/character-blink.png": "6918f0e277e85973e9d99cfe372235701b75b63afb512e4b0e4ab2975ee8813f"
+  }
+}

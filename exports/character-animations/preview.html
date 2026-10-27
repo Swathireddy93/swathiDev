@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swathi — character animation exports</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 32px 20px; color: #e8dfcb; background: #172522; font: 15px/1.6 system-ui, sans-serif; }
+  main { max-width: 980px; margin: auto; }
+  h1 { font-size: 26px; margin: 0; } h2 { margin: 0 0 14px; font-size: 20px; }
+  p { color: #c5d3c7; } a { color: inherit; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; }
+  article { border: 1px solid #456c68; padding: 20px; border-radius: 12px; }
+  img, video { display: block; width: 100%; height: auto; aspect-ratio: 1; image-rendering: pixelated; border-radius: 8px; }
+  img { background: repeating-conic-gradient(#e8dfcb 0 25%, #ddd4c0 0 50%) 0 / 24px 24px; }
+  video { background: #e8dfcb; }
+  .downloads { display: flex; gap: 20px; margin: 12px 0 22px; flex-wrap: wrap; }
+  small { color: #c5d3c7; }
+</style>
+<main>
+  <h1>Swathi's character animations</h1>
+  <p>The same portfolio character. Transparent 512 × 512 loops; MP4s include sound.</p>
+  <div class="grid">
+    <article>
+      <h2>Blinking eyes 👀</h2>
+      <img src="character-blinking.gif" alt="Swathi's pixel character naturally double-blinking" width="512" height="512">
+      <div class="downloads"><a href="character-blinking.gif" download>GIF</a><a href="character-blinking.webp" download>WebP</a><a href="character-blinking.mp4" download>MP4</a></div>
+      <video controls playsinline preload="metadata" loop poster="character-blinking-poster.png" aria-label="Blinking animation with subtle blip sounds"><source src="character-blinking.mp4" type="video/mp4"></video>
+      <small>Play the video to hear the two gentle blink sounds.</small>
+    </article>
+    <article>
+      <h2>Waving hi 👋</h2>
+      <img src="character-waving-hi.gif" alt="Swathi's pixel character waving a friendly hello" width="512" height="512">
+      <div class="downloads"><a href="character-waving-hi.gif" download>GIF</a><a href="character-waving-hi.webp" download>WebP</a><a href="character-waving-hi.mp4" download>MP4</a></div>
+      <video controls playsinline preload="metadata" loop poster="character-waving-hi-poster.png" aria-label="Waving animation with a cheerful female voice saying hi"><source src="character-waving-hi.mp4" type="video/mp4"></video>
+      <small>Play the video to hear “Hi!” on the first wave.</small>
+    </article>
+  </div>
+  <p><a href="character-animations.zip" download>Download the sharing bundle</a></p>
+</main>
+</html>
