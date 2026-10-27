@@ -103,6 +103,38 @@ use `--host 127.0.0.1` if local-only binding is preferred.
 Each cloud task already has an isolated environment. Use the existing checkout;
 do not create a Git worktree unless explicitly requested.
 
+## Vercel Web Analytics
+
+The official `@vercel/analytics/react` component is mounted once alongside the app
+in `src/main.tsx`, only in production builds. It renders no visible UI and stays
+mounted through the introduction, section navigation and movie replay. Development
+mode does not load analytics or contribute traffic. No custom events, visitor IDs,
+geolocation permission requests or form/content data are sent by the application.
+The `beforeSend` filter accepts page views only and removes query strings, URL
+fragments and URL credentials before transmission. Keep personal data out of any
+future URL path names as well.
+
+This is a single-page portfolio: `#about`, `#projects` and the other section anchors
+are navigation within one page, not distinct page views. Automatic scrolling and
+timeline years do not generate analytics events. If a router is introduced later,
+use the corresponding Vercel router integration for route-level reporting.
+
+In Vercel, open **ssr-tech-portfolio → Analytics → Web Analytics** and select
+**Enable** if offered. The existing project was already enabled when this
+integration was added. Deploy this production build to that same Vercel project;
+Vercel provides its analytics script/intake routes on the next deployment. No API
+key, custom-domain change, backend or database is needed. The relative script URL
+works on `ssreddy.com` and the project's Vercel domains. Local static preview and
+GitHub Pages do not provide Vercel's analytics endpoints.
+
+After deployment, visit `https://ssreddy.com/` and check that the analytics script
+and page-view request succeed in browser DevTools. View visitors, page views,
+countries, devices, browsers and referrers in the Vercel dashboard; data may take
+time to appear and blocked requests will not be counted. Vercel uses aggregated,
+cookie-free statistics with a temporary request-derived visitor hash, not a
+permanent cross-site identity. Country/region information is approximate, not
+device GPS coordinates. See [Vercel's privacy documentation](https://vercel.com/docs/analytics/privacy-policy).
+
 ## Stack research and decisions
 
 Versions and peer/engine constraints were checked against npm registry metadata
