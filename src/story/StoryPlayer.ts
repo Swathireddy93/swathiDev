@@ -33,6 +33,7 @@ export class StoryPlayer {
   private idleY = window.scrollY
   private ready = 0
   private duration = 0
+  private remainingLead = 0
   private from = 0
   private menuVisible = false
   private hidden = document.hidden
@@ -41,7 +42,16 @@ export class StoryPlayer {
 
   constructor(private callbacks: StoryCallbacks) { this.emit() }
 
-  private emit() { this.callbacks.snapshot({ ...this.state }) }
+  private emit() {
+    document.documentElement.classList.toggle('is-story-playing', this.state.status === 'playing')
+    this.callbacks.snapshot({ ...this.state })
+  }
+  private rebase() {
+    this.from = window.scrollY
+    this.duration = Math.max(0, this.duration - this.elapsed)
+    this.remainingLead = Math.max(0, this.remainingLead - this.elapsed)
+    this.elapsed = 0
+  }
   private queue() {
     if (this.disposed || this.frame || this.hidden) return
     if (this.state.status === 'playing' || (this.state.status === 'waiting' && this.menuVisible)) this.frame = requestAnimationFrame(this.tick)
@@ -57,7 +67,7 @@ export class StoryPlayer {
       this.idle = 0; this.idleY = window.scrollY
     }
     this.from = window.scrollY
-    if (this.ready >= 2) { this.duration = Math.max(0, this.duration - this.elapsed); this.elapsed = 0 }
+    if (this.ready >= 2) this.rebase()
   }
   pause = () => {
     if (this.state.status !== 'playing' && this.state.status !== 'waiting') return
@@ -69,8 +79,7 @@ export class StoryPlayer {
     if (this.disposed || this.state.status === 'playing') return
     if (!this.started || this.state.status === 'complete') { this.restart(); return }
     this.state = { ...this.state, status: 'playing', peek: this.beats[this.index].kind === 'peek' ? this.state.chapter : null }
-    this.from = window.scrollY
-    this.duration = Math.max(0, this.duration - this.elapsed); this.elapsed = 0
+    this.rebase()
     this.emit(); this.queue()
   }
   restart = (alreadyLanded = false) => {
@@ -79,11 +88,11 @@ export class StoryPlayer {
     this.state = { ...initialStory, status: 'playing' }
     this.begin(); this.queue()
   }
-  dispose() { this.disposed = true; this.halt() }
+  dispose() { this.disposed = true; this.halt(); document.documentElement.classList.remove('is-story-playing') }
 
   private begin() {
     const beat = this.beats[this.index]
-    this.elapsed = 0; this.ready = 0; this.duration = 0
+    this.elapsed = 0; this.ready = 0; this.duration = 0; this.remainingLead = 0
     this.state = { status: 'playing', chapter: beat.chapter, beat: beat.id, peek: beat.kind === 'peek' ? beat.chapter : null, year: beat.year }
     if (beat.kind === 'enter') this.callbacks.navigate(beat.chapter)
     if (beat.kind === 'year') this.callbacks.year(beat.year!)
@@ -112,14 +121,13 @@ export class StoryPlayer {
     if (beat.kind === 'hold') return timing.contactHoldMs
     if (beat.kind === 'ending') return timing.endingMs
     if (beat.kind === 'peek') return timing.peekMs
-    if (beat.kind === 'year') return timing.projectLeadMs + (Math.abs(this.destination(beat) - this.from) > 1 ? timing.yearMs : 0)
+    if (beat.kind === 'year') return experience.journey.hopMs + (beat.target && Math.abs(this.destination(beat) - this.from) > 1 ? timing.yearMs : 0)
     if (beat.kind !== 'read') return timing.travelMs
     const target = this.target(beat)
     const words = target?.innerText.trim().split(/\s+/).length ?? 0
     const distance = Math.abs(this.destination(beat) - this.from)
     const pace = this.readingPace(beat)
     if (beat.id === 'projects:introduction') return timing.projectIntroMs
-    if (beat.chapter === 'projects') return Math.max(experience.journey.hopMs, distance / timing.projectPixelsPerSecond * 1000 + pace.lead + pace.tail)
     const duration = Math.max(timing.minimumReadMs, words / timing.wordsPerMinute * 60_000, distance / timing.pixelsPerSecond * 1000 + pace.lead + pace.tail)
     return beat.chapter === 'about' ? Math.max(timing.minimumReadMs, duration - timing.aboutTrimMs) : duration
   }
@@ -135,14 +143,20 @@ export class StoryPlayer {
     } else if (this.state.status === 'playing') {
       const beat = this.beats[this.index]
       // Let React commit a new year before measuring its content.
-      if (this.ready < 2) { this.ready++; if (this.ready === 2) this.duration = this.measure(beat) }
+      if (this.ready < 2) {
+        this.ready++
+        if (this.ready === 2) {
+          this.duration = this.measure(beat)
+          this.remainingLead = beat.kind === 'read' ? this.readingPace(beat).lead : 0
+        }
+      }
       else {
         this.elapsed += delta
         const reading = beat.kind === 'read'
         const pace = this.readingPace(beat)
-        const motionMs = reading ? Math.max(1, this.duration - pace.lead - pace.tail)
+        const motionMs = reading ? Math.max(1, this.duration - this.remainingLead - pace.tail)
           : beat.kind === 'year' ? experience.story.yearMs : Math.max(1, this.duration)
-        const progress = clamp((this.elapsed - (reading ? pace.lead : 0)) / motionMs, 1)
+        const progress = clamp((this.elapsed - (reading ? this.remainingLead : 0)) / motionMs, 1)
         if (beat.target) window.scrollTo({ top: this.from + (this.destination(beat) - this.from) * (reading ? progress : ease(progress)), behavior: 'instant' })
         if (this.elapsed >= this.duration) {
           this.index++

@@ -1,5 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { gsap } from 'gsap'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { experience } from '../config/experience'
 import { chapterForYear } from '../content/career'
 import { projects, type Project } from '../content/portfolio'
@@ -12,7 +11,6 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
   const [playing, setPlaying] = useState(!storyControlled)
   const [inView, setInView] = useState(false)
   const [pageVisible, setPageVisible] = useState(!document.hidden)
-  const panel = useRef<HTMLDivElement>(null)
   const rail = useRef<HTMLDivElement>(null)
   const buttons = useRef<Record<number, HTMLButtonElement | null>>({})
   const chapter = chapterForYear(year)
@@ -27,16 +25,6 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
     return () => { observer.disconnect(); document.removeEventListener('visibilitychange', visibility) }
   }, [])
 
-  useLayoutEffect(() => {
-    if (reducedMotion) return
-    const animation = gsap.context(() => {
-      gsap.fromTo(panel.current, { autoAlpha: .2, y: 16 }, { autoAlpha: 1, y: 0, duration: .45, ease: 'power2.out' })
-      const node = buttons.current[year]?.querySelector('.year-node')
-      if (node) gsap.fromTo(node, { y: 0 }, { y: -12, duration: .18, repeat: 1, yoyo: true, ease: 'power2.out' })
-    })
-    return () => animation.revert()
-  }, [year, reducedMotion])
-
   useEffect(() => {
     if (storyControlled || !playEnabled || !inView || !pageVisible || dialogOpen) return
     const timer = window.setTimeout(() => {
@@ -50,7 +38,7 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
     const button = buttons.current[year]
     if (button && rail.current) {
       const target = button.offsetLeft - rail.current.clientWidth / 2 + button.offsetWidth / 2
-      rail.current.scrollTo({ left: target, behavior: reducedMotion ? 'instant' : 'smooth' })
+      rail.current.scrollTo({ left: target, behavior: 'instant' })
     }
   }, [year, reducedMotion])
 
@@ -86,7 +74,7 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
       </div>
     </div>
     {year <= 2023 && <p className="era-label era-caption"><span className="era-dot" aria-hidden="true" />Where my foundations took shape <span>· Oct 2018 – Mar 2024</span></p>}
-    <div id="career-panel" role="tabpanel" aria-labelledby={`year-${year}`} tabIndex={0} ref={panel} className="career-panel" data-year={year}>
+    <div id="career-panel" role="tabpanel" aria-labelledby={`year-${year}`} tabIndex={0} className="career-panel" data-year={year}>
       <div className="career-chapter">
         <div className="chapter-year"><span className="pixel">{year}</span><span>{chapter.period}</span></div>
         <div className="chapter-story"><p className="eyebrow">{chapter.employer} · Client: {chapter.client}</p>{chapter.storyStep && <p className="story-step pixel">{chapter.storyStep}</p>}<h3>{chapter.title}</h3><p className="chapter-role">{chapter.role}</p><p>{chapter.summary}</p>

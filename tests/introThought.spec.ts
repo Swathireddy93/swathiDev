@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test'
 
-const message = "Oh, hey! You made it. 👋\nWanna see what I've been building since 2018?\nSit back, it's hands-free. I'll show you around!"
+const message = "Oh, hey! You made it. 👋\nWelcome to my space on the internet.\nSit back, it's hands-free. I'll show you around!"
 const cloud = '.intro-thought-cloud'
 
 test.beforeEach(async ({ page }) => {
@@ -34,9 +34,16 @@ for (const width of [320, 1440]) test(`the second peek types three thought lines
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await openIntroduction(page)
+  await page.locator(cloud).evaluate(element => {
+    const stages: { state: string; time: number }[] = []
+    Reflect.set(window, 'testDialogueStages', stages)
+    new MutationObserver(() => stages.push({ state: element.getAttribute('data-state') ?? '', time: performance.now() }))
+      .observe(element, { attributes: true, attributeFilter: ['data-state'] })
+  })
+  const before = await audioCounts(page)
   await expect(page.locator(cloud)).toHaveAttribute('data-state', 'hidden')
   await reachState(page, 'typing')
-  await page.waitForTimeout(500)
+  await page.waitForTimeout(850)
   const partial = await page.locator(`${cloud} .thought-copy > span`).textContent()
   expect(partial!.length).toBeGreaterThan(0)
   expect(partial!.length).toBeLessThan(message.length)
@@ -47,8 +54,8 @@ for (const width of [320, 1440]) test(`the second peek types three thought lines
     floatHeights.push((await page.locator('.thought-float').boundingBox())!.y)
     await page.waitForTimeout(200)
   }
-  expect(Math.max(...floatHeights) - Math.min(...floatHeights)).toBeGreaterThan(.3)
-  expect(Math.max(...floatHeights) - Math.min(...floatHeights)).toBeLessThanOrEqual(8)
+  expect(Math.max(...floatHeights) - Math.min(...floatHeights)).toBeGreaterThan(.05)
+  expect(Math.max(...floatHeights) - Math.min(...floatHeights)).toBeLessThanOrEqual(3.05)
   const after = (await page.locator(cloud).boundingBox())!
   expect(Math.abs(after.x - held.x)).toBeLessThan(.5)
   expect(Math.abs(after.y - held.y)).toBeLessThan(.5)
@@ -60,21 +67,41 @@ for (const width of [320, 1440]) test(`the second peek types three thought lines
   const textBounds = (await page.locator(`${cloud} .thought-copy > span`).boundingBox())!
   expect(textBounds.x).toBeGreaterThanOrEqual(after.x)
   expect(textBounds.x + textBounds.width).toBeLessThanOrEqual(after.x + after.width)
-  expect(after.width).toBeLessThanOrEqual(312)
-  await expect(page.locator('.thought-silhouette path[fill]')).toHaveAttribute('fill', /url\(#/)
+  expect(after.width).toBeLessThanOrEqual(350)
+  await expect(page.locator(cloud)).toHaveAttribute('data-design', 'pixel-glass')
+  await expect(page.locator('.dialogue-glass')).toHaveCSS('backdrop-filter', 'blur(10px) saturate(0.8)')
+  await expect(page.locator('.thought-pointer')).toBeVisible()
   expect(after.x).toBeGreaterThanOrEqual(16)
   expect(after.x + after.width).toBeLessThanOrEqual(width - 16)
   expect(after.y).toBeGreaterThanOrEqual(100)
   await page.screenshot({ path: info.outputPath(`thought-cloud-${width}.png`) })
-  const before = await audioCounts(page)
   await reachState(page, 'fading')
   await expect.poll(async () => (await audioCounts(page)).swoosh).toBe(before.swoosh + 1)
+  const readHold = await page.evaluate(() => {
+    const stages = Reflect.get(window, 'testDialogueStages') as { state: string; time: number }[]
+    return stages.find(stage => stage.state === 'fading')!.time - stages.find(stage => stage.state === 'reading')!.time
+  })
+  expect(readHold).toBeGreaterThanOrEqual(2000)
+  expect(readHold).toBeLessThanOrEqual(3000)
   await expect(page.locator(cloud)).toHaveAttribute('data-state', 'hidden')
   await expect(page.locator(cloud)).toHaveCSS('visibility', 'hidden')
   await expect(page.locator('.app')).toHaveAttribute('data-scene', 'approaching')
   await expect(page.locator('.app')).toHaveAttribute('data-scene', 'pov')
   await expect(page.getByTestId('city-flight')).toBeVisible()
   expect(errors).toEqual([])
+})
+
+test('switching to reduced motion stops the glass dialogue and preserves manual navigation', async ({ page }) => {
+  await openIntroduction(page)
+  await reachState(page, 'typing')
+  await page.waitForTimeout(850)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await expect(page.getByTestId('portfolio')).toBeVisible()
+  await expect(page.locator(cloud)).toHaveCount(0)
+  const before = await audioCounts(page)
+  await page.waitForTimeout(400)
+  expect(await audioCounts(page)).toEqual(before)
+  await expect(page.getByRole('navigation', { name: 'Explore portfolio' }).getByRole('link')).toHaveCount(5)
 })
 
 test('mute silences the thought sounds and skipping cancels the unfinished intro', async ({ page }) => {

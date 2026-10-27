@@ -3,13 +3,13 @@ import { experience } from '../config/experience'
 
 export interface CameraState { x: number; y: number; zoom: number; focus?: number }
 
-/** Anchor the HTML thought cloud to the same transformed pixel character. */
+/** Anchor the floating glass dialogue to the same transformed pixel character. */
 export function positionThoughtCloud(bubble: HTMLDivElement, root: Container, character: Container, width: number) {
   const headX = root.x + character.x * root.scale.x
   const headY = root.y + (character.y - 80 * character.scale.y) * root.scale.y
   const left = Math.max(16, Math.min(width - bubble.offsetWidth - 16, headX - bubble.offsetWidth * .3))
   bubble.style.left = `${left}px`
-  bubble.style.top = `${Math.max(108, headY - bubble.offsetHeight - 32)}px`
+  bubble.style.top = `${Math.max(108, headY - bubble.offsetHeight - 18)}px`
   bubble.style.setProperty('--thought-tail', `${Math.max(20, Math.min(bubble.offsetWidth - 28, headX - left))}px`)
 }
 

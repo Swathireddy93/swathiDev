@@ -41,7 +41,7 @@ export class SceneController {
     b.thought.text.textContent = ''
     b.thought.element.dataset.state = 'hidden'
     b.thought.element.style.setProperty('--thought-bob', '0px')
-    gsap.set(b.thought.element, { autoAlpha: 0, y: 8, scale: .96 })
+    gsap.set(b.thought.element, { autoAlpha: 0, y: 10, scale: .975 })
     Object.assign(b.camera, { x: camera.startX, y: 0, zoom: camera.startZoom, focus: 0 })
     b.character.position.set(c.x, c.hiddenY)
     b.character.scale.set(c.scale)
@@ -90,7 +90,7 @@ export class SceneController {
       } }, typeAt)
       .call(() => { b.thought.element.dataset.state = 'reading' }, [], readAt)
       .call(() => { b.thought.element.dataset.state = 'fading'; b.audio.cue('swoosh') }, [], fadeAt)
-      .to(b.thought.element, { autoAlpha: 0, y: -10, duration: thought.fadeSeconds, ease: 'power1.in' }, fadeAt)
+      .to(b.thought.element, { autoAlpha: 0, y: -6, duration: thought.fadeSeconds, ease: 'power1.in' }, fadeAt)
       .call(() => { b.thought.element.dataset.state = 'hidden'; b.onStage('approaching') }, [], approachAt)
       .to(b.camera, { x: 0, y: 115, zoom: 3.8, focus: 1, duration: t.approachDuration, ease: 'power2.inOut' }, approachAt)
       .call(() => b.onStage('pov'), [], povAt)

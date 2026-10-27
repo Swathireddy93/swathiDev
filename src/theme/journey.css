@@ -455,13 +455,15 @@
 }
 
 /* Spacing follows the content hierarchy: section → chapter → group → detail. */
-#portfolio { --section-space: 64px; --chapter-space: 32px; --group-space: 24px; --detail-space: 16px; }
-#portfolio .section { padding-block: var(--section-space); }
-#portfolio .section { scroll-margin-top: calc(-1 * var(--section-space)); }
+#portfolio { --section-space: 48px; --chapter-space: 24px; --group-space: 16px; --detail-space: 12px; }
+#portfolio { overflow-anchor: none; }
+/* Each adjacent section contributes half the shared outer gap. */
+#portfolio .section { padding-block: calc(var(--section-space) / 2); scroll-margin-top: calc(-.5 * var(--section-space)); }
+html.is-story-playing { scroll-behavior: auto; }
 #portfolio .section-heading { margin-bottom: var(--chapter-space); }
 #portfolio .section-heading .eyebrow { margin-bottom: var(--detail-space); }
 #portfolio .section-character-guide { margin-bottom: var(--chapter-space); }
-#portfolio .about-section { column-gap: 64px; row-gap: var(--chapter-space); }
+#portfolio .about-section { column-gap: var(--section-space); row-gap: var(--chapter-space); }
 #portfolio .about-section > .section-character-guide { margin-bottom: 0; }
 .section-character-guide[data-guide-section="about"] { min-height: 0; padding: 12px 18px 0; gap: 16px; }
 .section-character-guide[data-guide-section="about"] .character-rest-scene { width: 96px; height: 96px; flex-basis: 96px; }
@@ -475,10 +477,17 @@
 #portfolio .contact-scene { margin-bottom: var(--chapter-space); }
 #portfolio .contact-links { margin-top: var(--group-space); }
 #portfolio .personal-project-grid { gap: var(--group-space); }
+#portfolio .personal-project-body, #portfolio .github-projects-body { padding: var(--chapter-space); }
+#portfolio .personal-project-body > p, #portfolio .photography-copy p { margin-bottom: var(--detail-space); }
+#portfolio .personal-project-body .personal-tagline { padding-bottom: var(--detail-space); margin-bottom: var(--group-space); }
+#portfolio .personal-project-body .stack-label { margin-top: var(--group-space); margin-bottom: var(--detail-space); }
+#portfolio .project-repository { margin-bottom: var(--group-space); }
+#portfolio .photography-section { margin-top: var(--group-space); padding-block: var(--group-space); gap: var(--group-space); }
+#portfolio .github-projects-body { gap: var(--group-space); }
 #portfolio .github-projects { margin-top: var(--group-space); }
 #portfolio .portfolio-engineering { padding-top: var(--group-space); margin-top: var(--group-space); }
 @media (max-width: 700px) {
-  #portfolio { --section-space: 48px; --chapter-space: 24px; --group-space: 20px; }
+  #portfolio { --section-space: 32px; --chapter-space: 20px; }
 }
 
 /* One clear title and one consistent case-study action on every project card. */
@@ -502,21 +511,31 @@
 @keyframes photography-shutter { 0% { opacity: 0; } 16% { opacity: 1; } 44% { opacity: .7; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .photography-flash { display: none; } }
 
-/* A quiet farewell between complete movie cycles; controls remain available. */
-.intro-thought-cloud { position: absolute; z-index: 2; width: min(312px, calc(100% - 32px)); aspect-ratio: 360 / 140; color: #11211e; opacity: 0; visibility: hidden; pointer-events: none; transform-origin: 30% 100%; }
-.thought-float { position: relative; width: 100%; height: 100%; transform: translate3d(0, var(--thought-bob, 0px), 0); }
-.thought-silhouette, .thought-haze { position: absolute; inset: 0; width: 100%; height: 100%; }
-.thought-haze { background: #d2e0d520; -webkit-backdrop-filter: blur(3px) saturate(.65); backdrop-filter: blur(3px) saturate(.65); }
-.thought-silhouette { overflow: visible; filter: drop-shadow(0 4px 8px #18352b22); }
-.thought-copy { position: absolute; left: 8.5%; right: 8.5%; top: 50%; transform: translateY(-50%); display: block; min-height: 4.95em; font-size: clamp(10px, 2.6vw, 11.5px); line-height: 1.65; white-space: pre; letter-spacing: 0; text-align: center; text-shadow: 0 1px 3px #e4ede566; }
-.thought-trail { position: absolute; left: var(--thought-tail, 30px); top: 86%; }
-.thought-trail i { display: block; position: absolute; background: #d9e8dd88; border-radius: 50%; width: 10px; height: 8px; box-shadow: 0 0 4px #d9e8dd44; }
-.thought-trail i:nth-child(2) { width: 6px; height: 5px; top: 13px; left: -6px; }
-.thought-trail i:nth-child(3) { width: 3px; height: 3px; top: 24px; left: -10px; }
-.thought-cursor { display: inline-block; width: 5px; height: .85em; margin-left: 3px; vertical-align: -.04em; background: #456c68; animation: thought-cursor .65s steps(1) infinite; }
+/* Frosted modern glass with restrained stepped corners and a pixel pointer. */
+.intro-thought-cloud { --dialogue-edge: polygon(12px 0, calc(100% - 12px) 0, calc(100% - 12px) 5px, calc(100% - 5px) 5px, calc(100% - 5px) 12px, 100% 12px, 100% calc(100% - 12px), calc(100% - 5px) calc(100% - 12px), calc(100% - 5px) calc(100% - 5px), calc(100% - 12px) calc(100% - 5px), calc(100% - 12px) 100%, 12px 100%, 12px calc(100% - 5px), 5px calc(100% - 5px), 5px calc(100% - 12px), 0 calc(100% - 12px), 0 12px, 5px 12px, 5px 5px, 12px 5px); position: absolute; z-index: 2; width: min(350px, calc(100% - 32px)); color: var(--cream); opacity: 0; visibility: hidden; pointer-events: none; transform-origin: 30% 100%; }
+.thought-float { position: relative; width: 100%; transform: translate3d(0, var(--thought-bob, 0px), 0); }
+.dialogue-frame { position: relative; padding: 18px 20px; border-radius: 10px; box-shadow: 0 8px 24px #0b17173d, 0 2px 5px #0b171722; }
+.dialogue-frame::before, .dialogue-glass { content: ''; position: absolute; inset: 0; clip-path: var(--dialogue-edge); }
+.dialogue-frame::before { background: linear-gradient(135deg, #e8dfcb99, #e8dfcb33 40%, #b48b6255 75%, #e8dfcb66); }
+.dialogue-glass { inset: 1px; background: #172522ed; }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .dialogue-glass { background: linear-gradient(145deg, #172522ad, #456c687d 65%, #172522a8); -webkit-backdrop-filter: blur(10px) saturate(.8); backdrop-filter: blur(10px) saturate(.8); }
+}
+.dialogue-highlight { position: absolute; top: 1px; left: 18px; right: 18px; height: 1px; background: linear-gradient(90deg, transparent, #e8dfcb66 20%, #e8dfcb22 80%, transparent); }
+.dialogue-pixels { position: absolute; top: 10px; right: 13px; display: flex; gap: 3px; align-items: flex-end; }
+.dialogue-pixels i { display: block; width: 2px; height: 2px; background: #e8dfcb55; }
+.dialogue-pixels i:nth-child(2) { height: 3px; background: #b48b6266; }
+.thought-copy { position: relative; display: block; min-height: 4.95em; font: 450 clamp(11px, 3vw, 13px) / 1.65 var(--body); white-space: pre-wrap; letter-spacing: 0; text-align: left; text-shadow: 0 1px 2px #0b171766; }
+.thought-copy::first-line { font-weight: 600; color: #f6efdd; }
+.thought-pointer { position: absolute; top: calc(100% - 1px); left: calc(var(--thought-tail, 30px) - 8px); width: 18px; height: 18px; background: #e8dfcb55; clip-path: polygon(0 0, 100% 0, 100% 6px, 12px 6px, 12px 12px, 6px 12px, 6px 100%, 0 100%); }
+.thought-pointer i { position: absolute; inset: 0 1px 1px; clip-path: inherit; background: #456c68c9; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.thought-cursor { display: inline-block; width: 3px; height: .8em; margin-left: 4px; vertical-align: -.03em; background: #e8dfcbb3; animation: thought-cursor .75s steps(1) infinite; }
 .intro-thought-cloud:not([data-state="typing"]) .thought-cursor { visibility: hidden; }
 @keyframes thought-cursor { 50% { opacity: 0; } }
+@media (max-width: 380px) { .dialogue-frame { padding: 16px; } }
+@media (prefers-reduced-motion: reduce) { .thought-float { transform: none; } .thought-cursor { animation: none; } }
 
+/* A quiet farewell between complete movie cycles; controls remain available. */
 .movie-ending { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; padding: max(32px, env(safe-area-inset-top)) 32px max(72px, env(safe-area-inset-bottom)); background: #000; color: #e8dfcb; text-align: center; }
 .ending-content { display: grid; justify-items: center; gap: 20px; max-width: 100%; }
 .ending-character { width: 112px; height: 154px; overflow: visible; }

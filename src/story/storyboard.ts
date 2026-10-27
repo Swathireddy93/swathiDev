@@ -31,8 +31,7 @@ export function buildStoryBeats(): StoryBeat[] {
     }
     beats.push({ id: 'projects:introduction', chapter, kind: 'read', target: '#projects .section-heading' })
     for (let year = experience.journey.firstYear; year <= experience.journey.lastYear; year++) {
-      beats.push({ id: `projects:${year}:year`, chapter, kind: 'year', year, target: '.journey-controls' })
-      beats.push({ id: `projects:${year}:read`, chapter, kind: 'read', year, target: '.career-chapter' })
+      beats.push({ id: `projects:${year}:year`, chapter, kind: 'year', year, target: year === experience.journey.firstYear ? '.journey-controls' : undefined })
     }
   }
   beats.push(

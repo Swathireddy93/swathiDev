@@ -58,7 +58,7 @@ test('the Contact message and Back to menu link stay inside the padded banner', 
   }
 })
 
-for (const [width, height] of [[1440, 900], [390, 844], [320, 740]]) test(`Projects frames each year from the rail through the chapter boundary at ${width}px`, async ({ page }, info) => {
+for (const [width, height] of [[1440, 900], [390, 844], [320, 740]]) test(`timeline years change in place without vertical scrolling at ${width}px`, async ({ page }, info) => {
   await page.setViewportSize({ width, height })
   await openStory(page)
   await page.clock.fastForward(7000)
@@ -69,36 +69,18 @@ for (const [width, height] of [[1440, 900], [390, 844], [320, 740]]) test(`Proje
   }
   await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'projects:introduction')
   await expect(page.locator('#projects-title')).toBeInViewport()
-  await expectClearOfHeader(page, '#projects .section-character-guide')
   await advanceBeat(page)
+  await page.clock.runFor(1800)
+  const cameraY = await page.evaluate(() => scrollY)
   for (let year = 2018; year <= 2026; year++) {
     await expect(page.locator(controls)).toHaveAttribute('data-story-beat', `projects:${year}:year`)
     await expect(page.locator('#career-panel')).toHaveAttribute('data-year', String(year))
-    await advanceBeat(page)
-    await expect(page.locator(controls)).toHaveAttribute('data-story-beat', `projects:${year}:read`)
-    await expect(page.locator('.year-scroll')).toBeInViewport({ ratio: 1 })
-    const framing = await page.evaluate(() => ({
-      controls: document.querySelector('.journey-controls')!.getBoundingClientRect().top,
-      header: document.querySelector('.site-header')!.getBoundingClientRect().bottom,
-      gap: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--story-top-gap')),
-      bottom: (visualViewport?.height ?? innerHeight) - parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--story-bottom-gap')),
-    }))
-    expect(Math.abs(framing.controls - framing.header - framing.gap)).toBeLessThanOrEqual(1)
-    const startingY = await page.evaluate(() => scrollY)
-    const bottom = () => page.locator('.career-chapter').evaluate(element => element.getBoundingClientRect().bottom)
-    const overflowed = await bottom() > framing.bottom + 1
-    for (let tick = 0; tick < 150 && await bottom() > framing.bottom + 1; tick++) {
-      await expect(page.locator(controls)).toHaveAttribute('data-story-beat', `projects:${year}:read`)
-      await page.clock.fastForward(100)
-    }
-    expect(await bottom()).toBeLessThanOrEqual(framing.bottom + 1)
-    if (overflowed) expect(Math.abs(await bottom() - framing.bottom)).toBeLessThanOrEqual(1)
-    else expect(Math.abs(await page.evaluate(() => scrollY) - startingY)).toBeLessThanOrEqual(1)
-    await expect(page.locator('.chapter-story .tags').last()).toBeInViewport({ ratio: 1 })
-    if (year === 2024) {
-      await expect(page.locator('.era-caption')).toHaveCount(0)
-      await page.screenshot({ path: info.outputPath(`projects-summary-${width}.png`) })
-    }
+    await expect(page.getByRole('tab', { name: String(year), exact: true })).toBeInViewport({ ratio: 1 })
+    await expect(page.locator('#career-panel')).toHaveCSS('transform', 'none')
+    expect(Math.abs(await page.evaluate(() => scrollY) - cameraY)).toBeLessThanOrEqual(1)
+    await page.clock.runFor(1000)
+    expect(Math.abs(await page.evaluate(() => scrollY) - cameraY)).toBeLessThanOrEqual(1)
+    if (year === 2024) await page.screenshot({ path: info.outputPath(`timeline-in-place-${width}.png`) })
     await advanceBeat(page)
   }
   await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:menu')
@@ -185,7 +167,7 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
       await expect(page.getByTestId('movie-ending')).toHaveCount(0)
       await page.clock.runFor(200)
     } else await advanceBeat(page)
-    if (beat === 'projects:2026:read') await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:menu')
+    if (beat === 'projects:2026:year') await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:menu')
   }
   await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'movie:ending')
   expect(peeks).toEqual(['about', 'experience', 'projects', 'experiments', 'contact'])
@@ -343,8 +325,6 @@ test('movie and timeline pause together without a competing timeline timer', asy
   await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
   await page.clock.runFor(64)
   await advanceBeat(page)
-  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'projects:2018:read')
-  await advanceBeat(page)
   await expect(page.locator('#career-panel')).toHaveAttribute('data-year', '2019')
   await page.getByRole('button', { name: 'Pause timeline', exact: true }).click()
   await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'paused')
@@ -394,4 +374,61 @@ test('changing reduced-motion preferences stops playback and restores an accurat
   await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'waiting')
   await page.locator('#portfolio-menu').getByRole('link', { name: 'Contact', exact: true }).click()
   await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'paused')
+})
+
+// Mobile browser toolbars resize the visual viewport while a page is scrolling.
+test('mobile height changes do not stall the journey from Jada.bit into photography', async ({ page }, info) => {
+  await page.setViewportSize({ width: 390, height: 740 })
+  await openStory(page)
+  await page.clock.fastForward(7000)
+  await page.clock.runFor(64)
+  for (let beat = 0; beat < 60; beat++) {
+    if (await page.locator(controls).getAttribute('data-story-beat') === 'experiments:read') break
+    await advanceBeat(page)
+  }
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:read')
+  const photoTop = () => page.locator('.photography-section').evaluate(element => element.getBoundingClientRect().top)
+  for (let step = 0; step < 180 && await photoTop() > 670; step++) {
+    await page.clock.fastForward(1000)
+    await page.clock.runFor(32)
+  }
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:read')
+  const before = await photoTop()
+  for (const height of [764, 740, 780, 740, 764, 740]) {
+    await page.setViewportSize({ width: 390, height })
+    await page.clock.runFor(600)
+  }
+  expect(await photoTop()).toBeLessThan(before - 20)
+  await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'playing')
+  await page.screenshot({ path: info.outputPath('jada-to-photography-mobile.png') })
+})
+
+
+test('section and photography spacing stays compact and consistent across viewports', async ({ page }, info) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' })
+  await page.goto('/')
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 900 })
+    await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())))
+    const gaps = await page.locator('#portfolio > div > .section').evaluateAll(sections => sections.slice(1).map((next, index) => {
+      const previous = sections[index]
+      const end = previous.getBoundingClientRect().bottom - parseFloat(getComputedStyle(previous).paddingBottom)
+      const start = next.getBoundingClientRect().top + parseFloat(getComputedStyle(next).paddingTop)
+      return start - end
+    }))
+    expect(Math.max(...gaps) - Math.min(...gaps)).toBeLessThanOrEqual(2)
+    expect(Math.max(...gaps)).toBeLessThanOrEqual(width > 700 ? 50 : 34)
+    if (width <= 700) {
+      const transition = await page.locator('.photography-photo').evaluate(image => {
+        const jada = document.querySelector('.personal-project-jada-bit')!
+        return image.getBoundingClientRect().top - jada.getBoundingClientRect().bottom
+      })
+      expect(transition).toBeGreaterThanOrEqual(16)
+      expect(transition).toBeLessThanOrEqual(36)
+      await page.locator('.photography-section').scrollIntoViewIfNeeded()
+      await page.locator('.photography-photo img').evaluate(image => (image as HTMLImageElement).decode())
+      await page.screenshot({ path: info.outputPath(`compact-photography-${width}.png`) })
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
+  }
 })

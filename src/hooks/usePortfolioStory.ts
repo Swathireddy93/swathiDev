@@ -30,11 +30,13 @@ export function usePortfolioStory({ reducedMotion, navigate, year, ending, resta
     for (const event of ['wheel', 'touchstart', 'pointerdown', 'keydown']) document.addEventListener(event, interrupt, { passive: true, capture: true })
     document.addEventListener('visibilitychange', visibility)
     window.addEventListener('resize', resize)
+    window.visualViewport?.addEventListener('resize', resize)
     return () => {
       controller.dispose(); player.current = null; observer.disconnect()
       for (const event of ['wheel', 'touchstart', 'pointerdown', 'keydown']) document.removeEventListener(event, interrupt, true)
       document.removeEventListener('visibilitychange', visibility)
       window.removeEventListener('resize', resize)
+      window.visualViewport?.removeEventListener('resize', resize)
     }
   }, [reducedMotion, navigate, year, ending, restart])
   return {
