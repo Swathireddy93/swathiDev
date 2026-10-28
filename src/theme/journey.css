@@ -497,6 +497,8 @@ html.is-story-playing { scroll-behavior: auto; }
 #portfolio .portfolio-engineering { padding-top: var(--group-space); margin-top: var(--group-space); }
 @media (max-width: 700px) {
   #portfolio { --section-space: 32px; --chapter-space: 20px; }
+  /* The shared section gap already separates the final team from Beyond Work. */
+  #experience .experience-row:last-child { padding-bottom: 0; border-bottom: 0; }
 }
 
 /* One clear title and one consistent case-study action on every project card. */
