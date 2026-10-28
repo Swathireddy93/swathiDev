@@ -167,6 +167,7 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
   await page.clock.runFor(64)
   await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'playing')
   const peeks: string[] = [], years = new Set<string>()
+  let footerSeen = false
   for (let step = 0; step < 90; step++) {
     if (await page.getByTestId('movie-ending').count()) break
     const beat = await page.locator(controls).getAttribute('data-story-beat') ?? ''
@@ -177,7 +178,7 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
       await expect(page.locator('#portfolio-menu')).toBeInViewport({ ratio: .7 })
       await expectClearOfHeader(page, '#hero-title')
     }
-    if (beat.endsWith(':read') && !beat.startsWith('projects:')) await expectClearOfHeader(page, `#${beat.split(':')[0]} .section-character-guide`)
+    if (beat.endsWith(':read') && !beat.startsWith('projects:') && !beat.startsWith('footer:')) await expectClearOfHeader(page, `#${beat.split(':')[0]} .section-character-guide`)
     if (/projects:\d+:year/.test(beat)) {
       years.add((await page.locator('#career-panel').getAttribute('data-year'))!)
       await expect(page.getByRole('button', { name: 'Pause timeline', exact: true })).toHaveAttribute('aria-pressed', 'true')
@@ -185,7 +186,17 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
     }
     await expect(page.getByRole('dialog')).not.toBeVisible()
     if (beat === 'experiments:read') await page.screenshot({ path: info.outputPath('beyond-work-story.png') })
-    if (beat === 'contact:hold') {
+    if (beat === 'footer:read') {
+      footerSeen = true
+      await expect(page.getByTestId('portfolio')).toHaveAttribute('data-story-focus', 'footer')
+      for (const text of ['SWATHI / MADE WITH PERSPECTIVE', 'Early prototype · artwork in progress']) {
+        await expect(page.getByText(text, { exact: true })).toBeInViewport({ ratio: 1 })
+      }
+      await page.screenshot({ path: info.outputPath(`movie-footer-${width}.png`) })
+      await page.clock.runFor(4000)
+      await expect(page.getByTestId('movie-ending')).toHaveCount(0)
+      await advanceBeat(page)
+    } else if (beat === 'contact:hold') {
       await page.clock.runFor(4400)
       await expect(page.getByTestId('movie-ending')).toHaveCount(0)
       await page.clock.runFor(200)
@@ -195,9 +206,11 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
   await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'movie:ending')
   expect(peeks).toEqual(['about', 'experience', 'projects', 'experiments', 'contact'])
   expect([...years]).toEqual(['2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'])
+  expect(footerSeen).toBe(true)
   const ending = page.getByTestId('movie-ending')
   await expect(ending).toHaveCSS('background-color', 'rgb(0, 0, 0)')
   await expect(ending.getByRole('heading', { name: 'THE END' })).toBeVisible()
+  await expect(ending.getByText('Thanks for watching!', { exact: true })).toBeVisible()
   await expect(ending.locator('.farewell-wave')).toHaveCount(1)
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
   expect(errors).toEqual([])
@@ -209,7 +222,7 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
   if (width === 390) {
     await page.keyboard.press('Escape')
     await expect(ending).toHaveCount(0)
-    await expect(page.locator('.contact-email')).toBeInViewport()
+    await expect(page.locator('.site-footer')).toBeInViewport()
     await page.clock.fastForward(60_000)
     await expect(page.locator('.app')).toHaveAttribute('data-phase', 'portfolio')
     await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'paused')

@@ -24,7 +24,7 @@ export function MovieEnding({ audio, playing, onExit }: { audio: AudioManager; p
     <div className="ending-content">
       <svg className="ending-character" ref={character} viewBox="0 0 64 88" aria-hidden="true" focusable="false" shapeRendering="crispEdges"><g transform="translate(6 4)"><PixelFigure waving /></g></svg>
       <h2 id="movie-ending-title" className="pixel">THE END</h2>
-      <p className="pixel">Until next time.</p>
+      <p className="pixel">Thanks for watching!</p>
       <button className="ending-exit pixel" type="button" onClick={onExit}>Back to portfolio →</button>
     </div>
   </section>

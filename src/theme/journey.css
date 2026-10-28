@@ -465,7 +465,9 @@ html.is-story-playing { scroll-behavior: auto; }
 #portfolio[data-story-focus="experience"] > div > #experience,
 #portfolio[data-story-focus="projects"] > div > #projects,
 #portfolio[data-story-focus="experiments"] > div > #experiments,
-#portfolio[data-story-focus="contact"] > div > #contact { visibility: visible; }
+#portfolio[data-story-focus="contact"] > div > #contact,
+#portfolio[data-story-focus="footer"] > div > #contact,
+#portfolio[data-story-focus="footer"] > div > .site-footer { visibility: visible; }
 #portfolio[data-story-paused="true"] * { animation-play-state: paused !important; }
 #portfolio .section-heading { margin-bottom: var(--chapter-space); }
 #portfolio .section-heading .eyebrow { margin-bottom: var(--detail-space); }

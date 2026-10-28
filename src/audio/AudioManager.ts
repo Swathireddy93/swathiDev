@@ -38,15 +38,29 @@ export class AudioManager {
     if (!this.active || this.state.muted || this.state.status !== 'playing' || !('speechSynthesis' in window)) return
     this.stopBye()
     const voice = new SpeechSynthesisUtterance('Bye!')
-    voice.lang = 'en-US'; voice.pitch = 1.25; voice.rate = 1.05; voice.volume = this.state.volume
+    voice.lang = 'en-US'; voice.pitch = 1.25; voice.rate = 1.05; voice.volume = experience.audio.farewellVolume
     const available = window.speechSynthesis.getVoices()
     voice.voice = available.find(item => item.lang === 'en-US' && item.localService) ?? available.find(item => item.lang.startsWith('en')) ?? null
     this.farewell = voice
+    const duck = () => {
+      if (this.farewell === voice) this.duckMusic(experience.audio.farewellDuckTo, experience.audio.farewellDuckHoldMs)
+    }
+    const release = () => {
+      if (this.farewell !== voice) return
+      this.farewell = undefined
+      this.restoreMusic()
+    }
+    voice.onstart = duck
+    voice.onend = release
+    voice.onerror = release
+    duck()
     window.speechSynthesis.speak(voice)
   }
   stopBye = () => {
-    if (this.farewell && 'speechSynthesis' in window) window.speechSynthesis.cancel()
+    if (!this.farewell) return
     this.farewell = undefined
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
+    this.restoreMusic()
   }
 
   subscribe = (listener: () => void) => {
@@ -169,13 +183,20 @@ export class AudioManager {
     if (cue === 'type') sound.rate(0.96 + index % 3 * .04)
     if (cue === 'bubble' || cue === 'peek') sound.rate(cue === 'peek' ? 0.72 + index * 0.025 : 0.9 + index * 0.07)
     sound.play()
-    if (cue !== 'jump' && cue !== 'land') return
-    const ambient = this.sounds.get('mountain')
-    ambient?.fade(ambient.volume(), this.state.volume * experience.audio.duckTo, 80)
+    if (cue === 'blink') this.duckMusic(experience.audio.blinkDuckTo, experience.audio.blinkDuckHoldMs)
+    else if (cue === 'jump' || cue === 'land') this.duckMusic(experience.audio.duckTo, experience.audio.duckHoldMs)
+  }
+  private restoreMusic = () => {
     clearTimeout(this.duckTimer)
-    this.duckTimer = setTimeout(() => {
-      if (this.active && !this.state.muted) ambient?.fade(ambient.volume(), this.state.volume, experience.audio.restoreMs)
-    }, experience.audio.duckHoldMs)
+    const ambient = this.sounds.get('mountain')
+    if (this.active && !this.state.muted) ambient?.fade(ambient.volume(), this.state.volume, experience.audio.restoreMs)
+  }
+  private duckMusic(ratio: number, holdMs: number) {
+    clearTimeout(this.duckTimer)
+    const ambient = this.sounds.get('mountain')
+    ambient?.fade(ambient.volume(), this.state.volume * ratio, 80)
+    // A bounded fallback also restores music if a mobile speech engine omits onend.
+    this.duckTimer = setTimeout(this.restoreMusic, holdMs)
   }
   fadeOut = (milliseconds = 500) => {
     clearTimeout(this.fadeTimer)

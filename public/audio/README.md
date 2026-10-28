@@ -39,3 +39,10 @@ the zoom, with one blip per blink. Eye closure lasts 120ms. Timing and volume ar
 configured in `experience.timing` and `experience.audio`. Muting suppresses the
 cue; pausing or skipping the introduction stops it. No new character art or
 external recording was created.
+
+The close-up blips now play at full cue volume with a brief music dip to 22% of
+the usual background level. The browser's cheerful "Bye!" uses full speech volume
+while music drops to 10% of its usual level. Speech completion, errors or cancel
+restore the mix smoothly; a three-second fallback handles missing mobile speech
+events. Mute continues to silence both. These levels and holds live in
+`experience.audio`; the original audio files remain unchanged.
