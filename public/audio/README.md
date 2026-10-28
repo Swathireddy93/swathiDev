@@ -31,3 +31,11 @@ The returning menu character uses a quieter, lower-pitched variation of the orig
 `thought-type.wav` (75ms) and `thought-swoosh.wav` (500ms) are original synthesized sounds for the opening character's thought cloud, reproducible with `python3 scripts/generate_thought_audio.py`. Each typewriter key blends a soft hammer strike, a damped wooden resonance and a quieter spring return. The master intro timeline synchronizes keys with non-space characters and plays one swoosh when the cloud fades. Both respect mute; skipping or disposing the intro stops them. No paid service or external recording is used.
 
 `camera-shutter.wav` is an original 180ms, mono, 22.05kHz synthesized double-curtain click (about 8KB). Recreate it with `python3 scripts/generate_shutter.py`. It accompanies the circular photography image's diamond flash every three seconds while the image is visible, respects mute and reduced motion, and leaves the background music level unchanged. No external recording or paid service is used.
+
+`character-blink.wav` is the 95ms soft blip from the existing character export's
+`audio/character-blinking.wav` (the excerpt starting at 0.80s). The introductory
+camera close-up reuses the original blink sprite twice, at 1.35s and 1.67s into
+the zoom, with one blip per blink. Eye closure lasts 120ms. Timing and volume are
+configured in `experience.timing` and `experience.audio`. Muting suppresses the
+cue; pausing or skipping the introduction stops it. No new character art or
+external recording was created.

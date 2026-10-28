@@ -22,6 +22,8 @@ async function openPortfolio(page: Page) {
   await expect(page.getByTestId('portfolio')).toBeVisible()
   const pause = page.getByRole('button', { name: 'Pause the movie', exact: true })
   if (await pause.isVisible()) await pause.click()
+  // A real browsing gesture leaves the paused movie frame for manual exploration.
+  await page.mouse.wheel(0, 1)
   const unmute = page.getByRole('button', { name: 'Unmute sound', exact: true })
   if (await unmute.isVisible()) await unmute.click()
   await expect(page.locator('.sound-controls')).toHaveAttribute('data-audio-status', 'playing')

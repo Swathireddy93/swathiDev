@@ -2,7 +2,7 @@ import { Howl, Howler } from 'howler'
 import { experience } from '../config/experience'
 import { LoopingMusic } from './LoopingMusic'
 
-type Cue = 'mountain' | 'jump' | 'land' | 'bubble' | 'glass' | 'peek' | 'shutter' | 'type' | 'swoosh'
+type Cue = 'mountain' | 'jump' | 'land' | 'bubble' | 'glass' | 'peek' | 'shutter' | 'type' | 'swoosh' | 'blink'
 interface AudioState {
   muted: boolean
   volume: number
@@ -20,6 +20,7 @@ const cues = {
   shutter: { src: `${import.meta.env.BASE_URL}audio/camera-shutter.wav`, loop: false },
   type: { src: `${import.meta.env.BASE_URL}audio/thought-type.wav`, loop: false },
   swoosh: { src: `${import.meta.env.BASE_URL}audio/thought-swoosh.wav`, loop: false },
+  blink: { src: `${import.meta.env.BASE_URL}audio/character-blink.wav`, loop: false },
 } satisfies Record<Cue, { src: string; loop: boolean }>
 
 export class AudioManager {
@@ -58,7 +59,7 @@ export class AudioManager {
     this.listeners.forEach((listener) => listener())
   }
   /** Preload short effects and register touch unlock before the first gesture. */
-  prepare = () => { this.sound('jump'); this.sound('land'); this.sound('bubble'); this.sound('glass'); this.sound('peek'); this.sound('shutter'); this.sound('type'); this.sound('swoosh') }
+  prepare = () => { this.sound('jump'); this.sound('land'); this.sound('bubble'); this.sound('glass'); this.sound('peek'); this.sound('shutter'); this.sound('type'); this.sound('swoosh'); this.sound('blink') }
   startOnLoad = () => {
     this.autoplayPending = true
     this.startPlayback()
@@ -164,7 +165,7 @@ export class AudioManager {
     if (!this.active || this.state.muted || this.state.status !== 'playing') return
     const sound = this.sound(cue)
     sound.mute(false)
-    sound.volume(cue === 'type' ? experience.audio.typeVolume : cue === 'swoosh' ? experience.audio.swooshVolume : cue === 'shutter' ? experience.audio.shutterVolume : cue === 'peek' ? 0.24 : cue === 'glass' ? 0.3 : cue === 'bubble' ? 0.55 : cue === 'jump' ? experience.audio.jumpVolume : experience.audio.landVolume)
+    sound.volume(cue === 'blink' ? experience.audio.blinkVolume : cue === 'type' ? experience.audio.typeVolume : cue === 'swoosh' ? experience.audio.swooshVolume : cue === 'shutter' ? experience.audio.shutterVolume : cue === 'peek' ? 0.24 : cue === 'glass' ? 0.3 : cue === 'bubble' ? 0.55 : cue === 'jump' ? experience.audio.jumpVolume : experience.audio.landVolume)
     if (cue === 'type') sound.rate(0.96 + index % 3 * .04)
     if (cue === 'bubble' || cue === 'peek') sound.rate(cue === 'peek' ? 0.72 + index * 0.025 : 0.9 + index * 0.07)
     sound.play()

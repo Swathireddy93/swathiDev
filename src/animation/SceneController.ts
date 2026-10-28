@@ -97,13 +97,19 @@ export class SceneController {
       .to(b.character, { alpha: 0, duration: 0.25 }, povAt)
       .to(b.camera, { zoom: 4.6, duration: t.duration - t.povAt, ease: 'power2.in' }, povAt)
       .call(b.onFade, [], duration - t.fadeOut)
+    for (const offset of t.approachBlinks) {
+      timeline
+        .call(() => { b.portrait.texture = b.poses.blink; b.audio.cue('blink') }, [], approachAt + offset)
+        .call(() => { b.portrait.texture = b.poses.neutral }, [], approachAt + offset + t.blinkDuration)
+    }
   }
-  pause() { this.timeline?.pause() }
+  pause() { this.timeline?.pause(); this.bindings.audio.stopCue('blink') }
   resume() { this.timeline?.resume() }
   dispose() {
     this.timeline?.kill()
     this.timeline = null
     this.bindings.audio.stopCue('type')
     this.bindings.audio.stopCue('swoosh')
+    this.bindings.audio.stopCue('blink')
   }
 }

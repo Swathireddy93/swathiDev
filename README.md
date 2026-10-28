@@ -25,7 +25,20 @@ After the name, role and five circles settle into view, the movie holds for thre
 
 `StoryPlayer` owns a single animation-frame clock. Reading holds and scroll speed adapt to word count, section height and the viewport. Window and visual-viewport resizes retain the remaining reading progress instead of restarting the initial hold, so mobile toolbar changes cannot stall the Jada.bit-to-photography passage. Native smooth scrolling yields to the movie’s single frame clock and is restored when it pauses or unmounts. It remeasures destinations as content changes, pauses its clock in background tabs and disposes all animation frames and event handlers on unmount. `usePortfolioStory` connects this controller to React and distinguishes visitor input from programmatic scrolling. The independent three-second timeline playback yields to the tour while it owns the project story.
 
-Wheel, touch, pointer or navigation-key input pauses automatic movement immediately. Sound controls remain usable without stopping the movie. One 18px play/pause icon sits 12px above the speaker's tap target, with no visible panel or persistent status text. A short “Pause the movie” hint appears at the first menu arrival. The same icon resumes or replays the movie; manual exploration never restarts automatically. The timeline's own pause button also pauses the movie, and only one clock owns year advancement. Reduced-motion preferences and the static graphics fallback keep manual navigation and omit automatic playback. Music still follows browser autoplay restrictions.
+Wheel, touch, pointer or navigation-key input pauses automatic movement immediately. Sound controls remain usable without stopping the movie. One 18px play/pause icon sits 12px above the speaker's tap target; both use compact frosted circles. A short “Pause the movie” hint appears at the first menu arrival. The same icon resumes or replays the movie; manual exploration never restarts automatically. The timeline's own pause button also pauses the movie, and only one clock owns year advancement. Reduced-motion preferences and the static graphics fallback keep manual navigation and omit automatic playback. Music still follows browser autoplay restrictions.
+
+Settled movie scenes use `data-story-focus` to show the active chapter and hide
+neighboring sections without changing their dimensions or adding permanent gaps.
+Transitions retain the normal page flow. Framing uses the actual available viewport
+and measured header, including Surface-style landscape/portrait sizes; long chapters
+scroll gradually while shorter ones remain still. A manual browsing gesture restores
+the complete page. Reduced-motion and graphics-fallback views remain fully visible.
+
+The movie pause button retains the current scroll frame, beat, year and remaining
+reading/waiting time. Play continues that checkpoint instead of re-entering the scene
+or restarting the initial menu hold. CSS motion and the contact character's GSAP
+timeline pause in place; `PlaybackTimers` preserves the remaining dab/flex and photo
+effect timers. Manual timeline playback is suppressed while the movie is paused.
 
 Adjust the idle delay, travel time, reading pace and character hold in `experience.story`. The tests use Playwright's clock to verify the complete journey without speeding up the production experience. No new rendering library, backend or service is required.
 

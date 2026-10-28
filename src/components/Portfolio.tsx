@@ -21,11 +21,11 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback, ending, on
   const [sectionVisit, setSectionVisit] = useState(0)
   const selectSection = useCallback((section: string) => { setSelectedSection(section); setSectionVisit(value => value + 1); if (section === 'projects') setYear(2018) }, [])
   const story = usePortfolioStory({ reducedMotion: reducedMotion || fallback, navigate: selectSection, year: setYear, ending: onMovieEnd, restart: onMovieLoop })
-  const exitEnding = () => { story.pause(); onMovieExit() }
-  const navigate = (section: string) => { story.pause(); selectSection(section) }
+  const exitEnding = () => { story.explore(); onMovieExit() }
+  const navigate = (section: string) => { story.explore(); selectSection(section) }
   const guideKey = (section: string) => `${section}-${selectedSection === section ? sectionVisit : 0}`
   const returnToMenu = () => {
-    story.pause()
+    story.explore()
     setSelectedSection(null)
     requestAnimationFrame(() => {
       const menu = document.getElementById('portfolio-menu')
@@ -34,7 +34,8 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback, ending, on
     })
   }
   return (
-    <main id="portfolio" tabIndex={-1} data-testid="portfolio">
+    <main id="portfolio" tabIndex={-1} data-testid="portfolio" data-story-focus={story.snapshot.focus}
+      data-story-paused={story.snapshot.status === 'paused' && !story.snapshot.exploring ? 'true' : undefined}>
       <div inert={ending} aria-hidden={ending || undefined}>
       <section className="portfolio-hero landing-hero" id="top" aria-labelledby="hero-title">
         <div className="city-panorama" aria-hidden="true"><CityBackdrop /></div>
@@ -45,14 +46,14 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback, ending, on
           <p className="hero-description">From enterprise foundations in 2018 to connected systems and AI-assisted development in 2026.</p>
           <div className="hero-actions"><a className="button primary" href="#projects">Explore my journey <span aria-hidden="true">↗</span></a><a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">View résumé <span aria-hidden="true">↗</span></a></div>
           </div>
-          <OrbitalNavigation audio={audio} reducedMotion={reducedMotion} onNavigate={navigate} storyActive={story.snapshot.status === 'waiting' || story.snapshot.status === 'playing'} storyPeek={story.snapshot.peek} />
+          <OrbitalNavigation audio={audio} reducedMotion={reducedMotion} onNavigate={navigate} storyActive={story.snapshot.status === 'waiting' || story.snapshot.status === 'playing' || (story.snapshot.status === 'paused' && !story.snapshot.exploring)} storyPeek={story.snapshot.peek} />
         </div>
         <div className="hero-bottom content-width"><button type="button" onClick={onReplay} className="replay-button" disabled={reducedMotion}>{reducedMotion ? 'Reduced motion enabled' : '↻ Replay the introduction'}</button></div>
       </section>
 
       <section id="projects" className="section projects-section content-width" aria-labelledby="projects-title">
         <CharacterGuide key={guideKey('projects')} section="projects" onReturn={returnToMenu} reducedMotion={reducedMotion} />
-        <CareerJourney key={selectedSection === 'projects' ? `journey-${sectionVisit}` : 'journey'} year={year} onYearChange={setYear} onProject={item => { story.pause(); setProject(item) }} reducedMotion={reducedMotion} dialogOpen={project !== null} storyControlled={story.snapshot.status === 'playing'} onPauseStory={story.pause} />
+        <CareerJourney key={selectedSection === 'projects' ? `journey-${sectionVisit}` : 'journey'} year={year} onYearChange={setYear} onProject={item => { story.explore(); setProject(item) }} reducedMotion={reducedMotion} dialogOpen={project !== null} storyControlled={story.snapshot.status === 'playing'} storyPaused={story.snapshot.status === 'paused' && !story.snapshot.exploring} onPauseStory={story.explore} />
       </section>
 
       <section id="about" className="section about-section content-width" aria-labelledby="about-title">

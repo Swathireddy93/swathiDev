@@ -455,3 +455,132 @@ test('section and photography spacing stays compact and consistent across viewpo
     expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
   }
 })
+
+for (const [width, height] of [[1504, 900], [1280, 800], [912, 1368], [1920, 1080], [390, 844], [320, 740]]) {
+  test(`the movie isolates each chapter and slowly reads overflow at ${width}x${height}`, async ({ page }, info) => {
+    await page.setViewportSize({ width, height })
+    await openStory(page)
+    await page.clock.fastForward(7000)
+    await page.clock.runFor(64)
+    for (const [chapter, checkpoint] of [['about', 'about:read'], ['experience', 'experience:read'], ['projects', 'projects:2018:year'], ['experiments', 'experiments:read'], ['contact', 'contact:read']]) {
+      for (let beat = 0; beat < 60; beat++) {
+        if (await page.locator(controls).getAttribute('data-story-beat') === checkpoint) break
+        await advanceBeat(page)
+      }
+      await expect(page.locator(controls)).toHaveAttribute('data-story-beat', checkpoint)
+      await expect(page.getByTestId('portfolio')).toHaveAttribute('data-story-focus', chapter)
+      await expect(page.locator(`#${chapter}`)).toHaveCSS('visibility', 'visible')
+      for (const other of ['about', 'experience', 'projects', 'experiments', 'contact'].filter(id => id !== chapter)) {
+        await expect(page.locator(`#${other}`)).toHaveCSS('visibility', 'hidden')
+        await expect(page.locator(`#${other} .section-character-guide`)).toBeHidden()
+      }
+      if (chapter === 'about') {
+        const start = await page.evaluate(() => scrollY)
+        const overflow = await page.locator('#about .about-copy').evaluate(element => element.getBoundingClientRect().bottom > innerHeight - 28)
+        await page.clock.runFor(5000)
+        const moved = await page.evaluate(() => scrollY) - start
+        if (overflow) expect(moved).toBeGreaterThan(0)
+        else expect(moved).toBeLessThanOrEqual(1)
+        expect(moved).toBeLessThan(300)
+        await page.screenshot({ path: info.outputPath(`isolated-about-${width}x${height}.png`) })
+      }
+    }
+    await page.getByRole('button', { name: 'Pause the movie', exact: true }).click()
+    await expect(page.getByTestId('portfolio')).toHaveAttribute('data-story-focus', 'contact')
+    await page.locator('main').dispatchEvent('touchstart')
+    await expect(page.getByTestId('portfolio')).not.toHaveAttribute('data-story-focus')
+    for (const id of ['about', 'experience', 'projects', 'experiments', 'contact']) await expect(page.locator(`#${id}`)).toHaveCSS('visibility', 'visible')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+  })
+}
+
+test('pausing at the first menu resumes its remaining wait without restarting the movie', async ({ page }) => {
+  await openStory(page)
+  await page.clock.runFor(1000)
+  const position = await page.evaluate(() => scrollY)
+  await page.getByRole('button', { name: 'Pause the movie', exact: true }).click()
+  await page.clock.fastForward(60_000)
+  await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
+  await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'waiting')
+  await page.clock.runFor(300)
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'waiting')
+  await page.clock.runFor(1700)
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'about:peek')
+  expect(await page.evaluate(() => scrollY)).toBe(position)
+})
+
+test('pause and play keep the same reading frame and resume immediately, including the character', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openStory(page)
+  await page.clock.fastForward(7000)
+  await page.clock.runFor(64)
+  for (let beat = 0; beat < 8; beat++) {
+    if (await page.locator(controls).getAttribute('data-story-beat') === 'about:read') break
+    await advanceBeat(page)
+  }
+  await page.clock.runFor(4000)
+  await page.getByRole('button', { name: 'Pause the movie', exact: true }).click()
+  const paused = await page.evaluate(() => scrollY)
+  await expect(page.locator('#about .steam-one')).toHaveCSS('animation-play-state', 'paused')
+  await page.clock.fastForward(60_000)
+  expect(await page.evaluate(() => scrollY)).toBe(paused)
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'about:read')
+  await expect(page.getByTestId('portfolio')).toHaveAttribute('data-story-focus', 'about')
+  await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
+  await page.clock.runFor(32)
+  expect(Math.abs(await page.evaluate(() => scrollY) - paused)).toBeLessThanOrEqual(2)
+  await page.clock.runFor(800)
+  const resumed = await page.evaluate(() => scrollY)
+  expect(resumed).toBeGreaterThan(paused + 2)
+  expect(resumed - paused).toBeLessThan(60)
+  await expect(page.locator('#about .steam-one')).toHaveCSS('animation-play-state', 'running')
+})
+
+test('pausing partway through a year keeps the year and its remaining playback time', async ({ page }) => {
+  await openStory(page)
+  await page.clock.fastForward(7000)
+  await page.clock.runFor(64)
+  for (let beat = 0; beat < 30; beat++) {
+    if (await page.locator(controls).getAttribute('data-story-beat') === 'projects:2019:year') break
+    await advanceBeat(page)
+  }
+  await expect(page.locator('#career-panel')).toHaveAttribute('data-year', '2019')
+  await page.clock.runFor(1200)
+  await page.getByRole('button', { name: 'Pause the movie', exact: true }).click()
+  const position = await page.evaluate(() => scrollY)
+  await page.clock.fastForward(60_000)
+  await expect(page.locator('#career-panel')).toHaveAttribute('data-year', '2019')
+  await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
+  await page.clock.runFor(1000)
+  await expect(page.locator('#career-panel')).toHaveAttribute('data-year', '2019')
+  await page.clock.runFor(1200)
+  await expect(page.locator('#career-panel')).toHaveAttribute('data-year', '2020')
+  expect(await page.evaluate(() => scrollY)).toBe(position)
+})
+
+test('the dab freezes with the movie and finishes its pose after play resumes', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openStory(page)
+  await page.clock.fastForward(7000)
+  await page.clock.runFor(64)
+  for (let beat = 0; beat < 30; beat++) {
+    if (await page.locator(controls).getAttribute('data-story-beat') === 'projects:introduction') break
+    await advanceBeat(page)
+  }
+  const character = page.locator('[data-guide-section="projects"] .posing-character')
+  for (let frame = 0; frame < 80; frame++) {
+    if (await character.getAttribute('data-character-pose') === 'dab') break
+    await page.clock.runFor(50)
+  }
+  await expect(character).toHaveAttribute('data-character-pose', 'dab')
+  const count = await character.getAttribute('data-pose-count')
+  await page.getByRole('button', { name: 'Pause the movie', exact: true }).click()
+  await page.clock.fastForward(60_000)
+  await expect(character).toHaveAttribute('data-character-pose', 'dab')
+  await expect(character).toHaveAttribute('data-pose-count', count!)
+  await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
+  await page.clock.runFor(100)
+  await expect(character).toHaveAttribute('data-character-pose', 'dab')
+  await page.clock.runFor(1000)
+  await expect(character).toHaveAttribute('data-character-pose', 'neutral')
+})

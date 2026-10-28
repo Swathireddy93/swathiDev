@@ -9,8 +9,10 @@ export interface StorySnapshot {
   beat: string
   peek: StoryChapter | null
   year?: number
+  focus?: StoryChapter | 'menu'
+  exploring?: boolean
 }
-export const initialStory: StorySnapshot = { status: 'waiting', chapter: 'about', beat: 'waiting', peek: null }
+export const initialStory: StorySnapshot = { status: 'waiting', chapter: 'about', beat: 'waiting', peek: null, focus: 'menu' }
 interface StoryCallbacks {
   snapshot: (snapshot: StorySnapshot) => void
   navigate: (chapter: StoryChapter) => void
@@ -39,12 +41,15 @@ export class StoryPlayer {
   private hidden = document.hidden
   private started = false
   private disposed = false
+  private pausedY = 0
 
   constructor(private callbacks: StoryCallbacks) { this.emit() }
 
   private emit() {
     document.documentElement.classList.toggle('is-story-playing', this.state.status === 'playing')
+    document.documentElement.classList.toggle('is-story-paused', this.state.status === 'paused' && !this.state.exploring)
     this.callbacks.snapshot({ ...this.state })
+    document.dispatchEvent(new Event('portfolio:playback'))
   }
   private rebase() {
     this.from = window.scrollY
@@ -69,17 +74,33 @@ export class StoryPlayer {
     this.from = window.scrollY
     if (this.ready >= 2) this.rebase()
   }
-  pause = () => {
+  pause = (exploring = false) => {
+    if (this.state.status === 'paused') {
+      if (exploring && !this.state.exploring) { this.state = { ...this.state, exploring: true, focus: undefined }; this.emit() }
+      return
+    }
     if (this.state.status !== 'playing' && this.state.status !== 'waiting') return
     this.halt()
+    this.pausedY = window.scrollY
     window.scrollTo({ top: window.scrollY, behavior: 'instant' })
-    this.state = { ...this.state, status: 'paused', peek: null }; this.emit()
+    this.state = { ...this.state, status: 'paused', exploring, focus: exploring ? undefined : this.state.focus }; this.emit()
   }
   play = () => {
     if (this.disposed || this.state.status === 'playing') return
-    if (!this.started || this.state.status === 'complete') { this.restart(); return }
-    this.state = { ...this.state, status: 'playing', peek: this.beats[this.index].kind === 'peek' ? this.state.chapter : null }
-    this.rebase()
+    if (this.state.status === 'complete') { this.restart(); return }
+    if (!this.started) {
+      this.state = { ...this.state, status: 'waiting', exploring: false, focus: 'menu' }
+      const menu = document.getElementById('portfolio-menu')
+      if (menu) window.scrollTo({ top: menuPosition(menu), behavior: 'instant' })
+      this.idleY = window.scrollY
+      this.emit(); this.queue(); return
+    }
+    const beat = this.beats[this.index]
+    if (this.state.exploring) {
+      window.scrollTo({ top: this.pausedY, behavior: 'instant' })
+      if (beat.kind === 'year') this.callbacks.year(beat.year!)
+    }
+    this.state = { ...this.state, status: 'playing', exploring: false, focus: this.focusFor(beat) }
     this.emit(); this.queue()
   }
   restart = (alreadyLanded = false) => {
@@ -88,12 +109,22 @@ export class StoryPlayer {
     this.state = { ...initialStory, status: 'playing' }
     this.begin(); this.queue()
   }
-  dispose() { this.disposed = true; this.halt(); document.documentElement.classList.remove('is-story-playing') }
+  dispose() {
+    this.disposed = true; this.halt()
+    document.documentElement.classList.remove('is-story-playing', 'is-story-paused')
+    document.dispatchEvent(new Event('portfolio:playback'))
+  }
+
+  private focusFor(beat: StoryBeat): StorySnapshot['focus'] {
+    if (beat.kind === 'peek') return 'menu'
+    if (beat.kind === 'read' || beat.kind === 'year' || beat.kind === 'hold') return beat.chapter
+    return undefined
+  }
 
   private begin() {
     const beat = this.beats[this.index]
     this.elapsed = 0; this.ready = 0; this.duration = 0; this.remainingLead = 0
-    this.state = { status: 'playing', chapter: beat.chapter, beat: beat.id, peek: beat.kind === 'peek' ? beat.chapter : null, year: beat.year }
+    this.state = { status: 'playing', chapter: beat.chapter, beat: beat.id, peek: beat.kind === 'peek' ? beat.chapter : null, year: beat.year, focus: this.focusFor(beat) }
     if (beat.kind === 'enter') this.callbacks.navigate(beat.chapter)
     if (beat.kind === 'year') this.callbacks.year(beat.year!)
     if (beat.kind === 'ending') this.callbacks.ending()

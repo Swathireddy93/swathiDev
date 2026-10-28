@@ -47,7 +47,7 @@ export function ThinkingCharacter({ reducedMotion }: { reducedMotion: boolean })
     }
     let visible = false
     const sync = () => {
-      const active = visible && !document.hidden
+      const active = visible && !document.hidden && !document.documentElement.classList.contains('is-story-paused')
       element.setAttribute('data-motion-active', String(active))
       if (active) timeline?.resume(); else timeline?.pause()
     }
@@ -55,7 +55,8 @@ export function ThinkingCharacter({ reducedMotion }: { reducedMotion: boolean })
     const resize = new ResizeObserver(() => { distance = Math.max(0, element.clientWidth - 60); render() })
     observer.observe(element); resize.observe(element)
     document.addEventListener('visibilitychange', sync)
-    return () => { timeline?.kill(); observer.disconnect(); resize.disconnect(); document.removeEventListener('visibilitychange', sync) }
+    document.addEventListener('portfolio:playback', sync)
+    return () => { timeline?.kill(); observer.disconnect(); resize.disconnect(); document.removeEventListener('visibilitychange', sync); document.removeEventListener('portfolio:playback', sync) }
   }, [reducedMotion])
   return <div ref={container} className="thinking-character" data-motion-active="false" aria-hidden="true" style={{ '--thinking-pause': `${experience.guide.thinkingPauseSeconds}s` } as CSSProperties}>
     <div ref={traveler} className="thinking-traveler">

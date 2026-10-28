@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { photography } from '../content/photography'
 import type { AudioManager } from '../audio/AudioManager'
 import { experience } from '../config/experience'
+import { PlaybackTimers } from '../story/PlaybackTimers'
 
 export function PhotographySection({ audio, reducedMotion }: { audio: AudioManager; reducedMotion: boolean }) {
   const [imageFailed, setImageFailed] = useState(false)
@@ -10,24 +11,25 @@ export function PhotographySection({ audio, reducedMotion }: { audio: AudioManag
   useEffect(() => {
     const element = photo.current
     if (!element || !imageLoaded || imageFailed || reducedMotion) return
+    const clock = new PlaybackTimers()
     let visible = false
     let lastFlash = -Infinity
-    let repeat: ReturnType<typeof setTimeout> | undefined
-    let release: ReturnType<typeof setTimeout> | undefined
-    const clear = () => { clearTimeout(repeat); clearTimeout(release); element.setAttribute('data-flash-active', 'false') }
+    let repeat: number | undefined
+    let release: number | undefined
+    const clear = () => { clock.clear(repeat); clock.clear(release); element.setAttribute('data-flash-active', 'false') }
     const pulse = () => {
       if (!visible || document.hidden) return
       lastFlash = performance.now()
       element.setAttribute('data-flash-active', 'true')
       audio.cue('shutter')
-      release = setTimeout(() => element.setAttribute('data-flash-active', 'false'), experience.photography.flashMs)
-      repeat = setTimeout(pulse, experience.photography.intervalMs)
+      release = clock.timeout(() => element.setAttribute('data-flash-active', 'false'), experience.photography.flashMs)
+      repeat = clock.timeout(pulse, experience.photography.intervalMs)
     }
     const update = () => {
       clear()
       // Let the image arrive before flashing. Viewport/threshold changes must
       // not restart the shutter repeatedly while the movie scrolls past it.
-      if (visible && !document.hidden) repeat = setTimeout(pulse,
+      if (visible && !document.hidden) repeat = clock.timeout(pulse,
         Math.max(350, experience.photography.intervalMs - (performance.now() - lastFlash)))
     }
     const observer = new IntersectionObserver(([entry]) => {
@@ -38,7 +40,7 @@ export function PhotographySection({ audio, reducedMotion }: { audio: AudioManag
     }, { threshold: .65 })
     observer.observe(element)
     document.addEventListener('visibilitychange', update)
-    return () => { observer.disconnect(); document.removeEventListener('visibilitychange', update); clear() }
+    return () => { observer.disconnect(); document.removeEventListener('visibilitychange', update); clear(); clock.dispose() }
   }, [audio, imageLoaded, imageFailed, reducedMotion])
   return <section className="photography-section" aria-labelledby="photography-title">
     <div className="photography-photo" ref={photo} style={{ '--photo-flash-duration': `${experience.photography.flashMs}ms` } as CSSProperties}>

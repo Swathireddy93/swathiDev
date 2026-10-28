@@ -102,7 +102,7 @@ export function OrbitalNavigation({ audio, reducedMotion, onNavigate, storyActiv
           </span>)}
         </span>
       </span>
-      <span className="orbital-label">{label}</span><span className="orbital-index" aria-hidden="true">0{index + 1} ↗</span>
+      <span className="orbital-label">{label}</span>
     </a></div>)}
   </nav>
 }
