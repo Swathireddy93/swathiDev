@@ -61,6 +61,8 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
         setPlaying(!playing)
       }}>{playEnabled ? 'Pause timeline' : 'Play timeline'} <span aria-hidden="true">{playEnabled ? 'Ⅱ' : '▷'}</span></button>
     </div>
+    <div className="timeline-frame">
+    <p className="era-caption" data-visible={year <= 2024} aria-hidden={year > 2024 || undefined}>Where my foundations took shape</p>
     <div className="year-scroll" ref={rail}>
       <div className="year-rail" role="tablist" aria-label="Career year">
         <div className="year-track" aria-hidden="true"><i style={{ transform: `scaleX(${(year - years[0]) / (years.length - 1)})` }} /></div>
@@ -74,7 +76,7 @@ export function CareerJourney({ year, onYearChange, onProject, reducedMotion, di
         </div>
       </div>
     </div>
-    {year <= 2023 && <p className="era-label era-caption"><span className="era-dot" aria-hidden="true" />Where my foundations took shape <span>· Oct 2018 – Mar 2024</span></p>}
+    </div>
     <div id="career-panel" role="tabpanel" aria-labelledby={`year-${year}`} tabIndex={0} className="career-panel" data-year={year}>
       <div className="career-chapter">
         <div className="chapter-year"><span className="pixel">{year}</span><span>{chapter.period}</span></div>

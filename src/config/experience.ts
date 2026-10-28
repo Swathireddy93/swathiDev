@@ -37,7 +37,7 @@ export const experience = {
   loading: { minimumMs: 4000, completeHoldMs: 450, tvRevealMs: 500 },
   story: { idleMs: 3000, travelMs: 2200, mobileTravelMs: 2600, travelPixelsPerSecond: 1300, mobileTravelPixelsPerSecond: 750, maxTravelMs: 8000, settlePixels: 6, readRampMs: 650,
     peekMs: 1500, yearMs: 1600, leadMs: 1800, tailMs: 2200, wordsPerMinute: 240, pixelsPerSecond: 38, mobileReadPixelsPerSecond: 30,
-    minimumReadMs: 6500, aboutTrimMs: 5000, projectIntroMs: 1800, projectLeadMs: 600, projectTailMs: 500, contactHoldMs: 4500, footerHoldMs: 4500, endingMs: 5000 },
+    minimumReadMs: 6500, aboutTrimMs: 5000, projectIntroMs: 1800, projectLeadMs: 600, projectTailMs: 500, contactReadMs: 5000, endingMs: 5000 },
   assetsTimeoutMs: 12_000,
   artworkStatus: 'Temporary procedural pixel art; final art awaits visual review.',
 } as const

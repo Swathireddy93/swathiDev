@@ -21,15 +21,15 @@ This milestone includes the cinematic introduction, hands-free movie loop, respo
 
 After the name, role and five circles settle into view, the movie holds for three seconds. The normal idle character loop yields to the movie: a single About Me hop leads straight into its content without re-centring the landing again. The sequence is **About Me → Experience → Projects → Beyond Work → Contact**. Later chapters return to the same landing frame, where the original colored character introduces the next destination. Experience targets the employers-and-clients section; Projects targets the career timeline. The existing `#career-summary` anchor remains available.
 
-`src/story/storyboard.ts` builds the sequence from the existing career data. Projects first shows its introduction, then plays every year from 2018–2026. The camera frames the timeline once, then changes years every three seconds without vertical page movement, panel slides or bouncing year markers. The horizontal rail reveals the selected year immediately on mobile. Visitors can pause and scroll manually to explore the full content. Detailed project cards and case studies remain available for manual exploration. The Citi tenure caption stays outside the horizontal scroller and is omitted for later years, preventing clipped date fragments. After 2026 finishes, the movie returns to the menu and continues into Beyond Work. Detailed case studies remain available through the normal manual dialogs. Beyond Work includes Ritual, Jada.bit, photography and the GitHub workspace. After Contact, the movie frames the footer credits for 4.5 seconds before the black pixel-art goodbye card leads back through loading into another complete movie cycle.
+`src/story/storyboard.ts` builds the sequence from the existing career data. Projects first shows its introduction, then plays every year from 2018–2026. The camera frames the timeline once, then changes years every three seconds without vertical page movement, panel slides or bouncing year markers. The horizontal rail reveals the selected year immediately on mobile. Visitors can pause and scroll manually to explore the full content. Detailed project cards and case studies remain available for manual exploration. The Citi tenure caption stays outside the horizontal scroller and is omitted for later years, preventing clipped date fragments. After 2026 finishes, the movie returns to the menu and continues into Beyond Work. Detailed case studies remain available through the normal manual dialogs. Beyond Work includes Ritual, Jada.bit, photography and the GitHub workspace. The final Contact scene includes the footer credits for five seconds, then goes directly to the black pixel-art goodbye card and stays there until the visitor chooses Back to portfolio.
 
 `StoryPlayer` owns a single animation-frame clock. Reading holds and scroll speed adapt to word count, section height and the viewport. Travel uses distance-based timing (at least 2.6 seconds on mobile and 2.2 seconds on desktop), gentle sine easing and a bounded 6px settling bounce. Reading uses 650ms acceleration/deceleration ramps and a slower mobile pace. Viewport changes re-anchor the current frame without resetting its elapsed time or easing progress; play resumes at the same point. Window and visual-viewport resizes retain the remaining reading progress instead of restarting the initial hold, so mobile toolbar changes cannot stall the Jada.bit-to-photography passage. Native smooth scrolling yields to the movie’s single frame clock and is restored when it pauses or unmounts. It remeasures destinations as content changes, pauses its clock in background tabs and disposes all animation frames and event handlers on unmount. `usePortfolioStory` connects this controller to React and distinguishes visitor input from programmatic scrolling. The independent three-second timeline playback yields to the tour while it owns the project story.
 
-Wheel, touch, pointer or navigation-key input pauses automatic movement immediately. Sound controls remain usable without stopping the movie. One 18px play/pause icon sits 12px above the speaker's tap target; both use compact frosted circles. A short “Pause the movie” hint appears at the first menu arrival. The same icon resumes or replays the movie; manual exploration never restarts automatically. The timeline's own pause button also pauses the movie, and only one clock owns year advancement. Reduced-motion preferences and the static graphics fallback keep manual navigation and omit automatic playback. Music still follows browser autoplay restrictions.
+Wheel, touch, pointer or navigation-key input pauses automatic movement immediately. Sound controls remain usable without stopping the movie. One 18px play/pause icon sits 12px above the speaker's tap target; both use compact frosted circles. A short “Pause the movie” hint appears at the first menu arrival. The same icon resumes an interrupted movie; it disappears once the one-time movie is complete. Manual exploration never restarts automatically. The timeline's own pause button also pauses the movie, and only one clock owns year advancement. Reduced-motion preferences and the static graphics fallback keep manual navigation and omit automatic playback. Music still follows browser autoplay restrictions.
 
 Settled movie scenes use `data-story-focus` to show the active chapter and hide
 neighboring sections without changing their dimensions or adding permanent gaps.
-The final credits keep Contact visible above the footer so the movie ends in context. Transitions retain the normal page flow. Framing uses the actual available viewport
+Contact and the final credits share one five-second scene so the movie ends in context without extra footer holds. Transitions retain the normal page flow. Framing uses the actual available viewport
 and measured header, including Surface-style landscape/portrait sizes; long chapters
 scroll gradually while shorter ones remain still. A manual browsing gesture restores
 the complete page. Reduced-motion and graphics-fallback views remain fully visible.
@@ -402,10 +402,43 @@ The Contact guide has 24px padding on desktop and 20px on mobile, keeping its te
 
 The brief movie hint runs vertically in the right-edge gutter, outside the text column. Photography uses a prominent 420ms diamond lens flash clipped to the circular photo, synchronized with the original local shutter cue every three seconds. It waits for the actual image to load and become at least 65% visible, and stops offscreen or in a hidden tab. Reduced motion disables the effect; mute silences only the audio. Timings and mix live in `experience.photography` and `experience.audio.shutterVolume`.
 
-The unattended movie holds on Contact for 4.5 seconds after reading, scrolls to the footer credits for another 4.5 seconds, then shows a black pixel-art THE END card with a waving character and “Thanks for watching!” for five seconds. The cheerful browser “Bye!” uses full speech volume while music briefly drops to 10% of its normal level; completion, cancellation and errors restore it smoothly, with a bounded fallback for missing mobile speech events. The opening double-blink cue also plays louder over a short music dip. It returns through the paced 0–100% loader, mountain introduction and city flight into a fresh tour. The selected music segment restarts without changing mute. Pause freezes the ending clock and wave; Escape or Back to portfolio exits the ending without looping. Reduced-motion and graphics-fallback views remain manual. Timings live in `experience.story`.
+After landing on Contact, the unattended movie shows Contact and its footer credits for five seconds, gently scrolling only when needed on short screens. The camera reaches the credits with a 2.2-second reading hold before the black pixel-art farewell card appears. The signature and artwork credit are also repeated on that card so the overlay cannot hide them on mobile. The waving character, “Thanks for watching!” and Back to portfolio button remain on screen indefinitely. The soundtrack stops on arrival; the one-shot local cartoon “Bye!” still plays when audio is enabled. Muting/unmuting and ordinary browsing do not restart the soundtrack. After five seconds, the movie clock completes and its play/pause control disappears. Back to portfolio (or Escape) returns to the introduction and five menu circles in manual mode, without another idle countdown. Only the existing explicit Replay the introduction action starts another journey. Reduced-motion and graphics-fallback views remain manual. Timings live in `experience.story`.
 
 Public GitHub entries in Jada.bit, Builds in progress and Contact currently show a non-interactive “GitHub link coming soon” placeholder. `profile.github` is intentionally `null`; setting a URL restores the existing data-driven links. The GitHub source repository and publishing workflow remain connected.
 
 About Me’s automatic reading passage is five seconds shorter via `experience.story.aboutTrimMs`, while preserving the content and the minimum reading time. Timeline framing holds are configurable in `experience.story`; year intervals use `experience.journey.hopMs`. Ritual includes its live website link; Jada.bit opens with Swathi’s Electronics and Communication Engineering background and relevant embedded-system topics.
 
 Spacing follows the section → chapter → group → detail hierarchy. Desktop values are 48/24/16/12px and mobile values are 32/20/16/12px. Adjacent sections each contribute half their shared outer gap, avoiding doubled padding. Photography and cards use the group/detail levels for outer and inner spacing. The `phase-3-design-complete` tag remains the published milestone baseline; these corrections are reviewed in a preview before another publication.
+
+The photography biography is the supplied four-paragraph personal story. The
+“Go on, have a peek 👀” is plain introductory text. Two compact, side-by-side
+floating photo cards link to the existing editorial profile (`ssr.pix`) and personal
+people/landscapes profile (`swathi.pix`). Each retains its full label and description
+with a tiny camera or landscape icon. Float pauses offscreen, in hidden tabs, on
+hover/focus or with the movie; reduced motion keeps both cards still. The existing
+circular image, biography column and shutter animation are preserved.
+
+`PlaybackOverlay` anchors the existing controls to `window.visualViewport` width,
+height and offsets, with resize/scroll updates batched into one animation frame.
+The mobile bug was reproduced by shrinking the visual viewport: both old fixed
+controls retained their layout-viewport coordinates and fell outside the visible
+area. The movie control is portaled into the same root layer as audio so neither
+depends on chapter visibility, scrolling content or inert ending content. Safe-area
+insets and 44px targets remain; the footer reserves a small control gutter when
+zoomed. Intro and reduced-motion rules still decide when playback controls exist.
+No z-index escalation is used to address viewport clipping; the existing ending
+stacking order is preserved.
+
+The opening has no spoken greeting; its dialogue, typing and blink cues remain.
+The closing wave plays an original local cartoon-style “Bye!” with a raised pitch,
+light eight-bit texture and a subtle vocal wobble. Its WAV and reproducible optional
+authoring script are documented in `public/audio/README.md`. It uses the existing
+Howler mixer, briefly dips music and stops safely on mute, pause or exit. The
+closing card omits “THE END” while retaining the wave, thank-you, exit and
+five-second Contact scene and persistent goodbye screen.
+
+The “Where my foundations took shape” caption sits above the timeline, aligned
+with the first year’s pixel marker. It remains outside the horizontal scroller
+and is visible through 2024, with its space reserved in later years to prevent
+content jumps. The diamond and adjacent date range are omitted; the existing
+project grouping bracket and chapter dates remain.

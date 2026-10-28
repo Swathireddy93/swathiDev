@@ -2,7 +2,7 @@ import { Howl, Howler } from 'howler'
 import { experience } from '../config/experience'
 import { LoopingMusic } from './LoopingMusic'
 
-type Cue = 'mountain' | 'jump' | 'land' | 'bubble' | 'glass' | 'peek' | 'shutter' | 'type' | 'swoosh' | 'blink'
+type Cue = 'mountain' | 'jump' | 'land' | 'bubble' | 'glass' | 'peek' | 'shutter' | 'type' | 'swoosh' | 'blink' | 'bye'
 interface AudioState {
   muted: boolean
   volume: number
@@ -21,6 +21,7 @@ const cues = {
   type: { src: `${import.meta.env.BASE_URL}audio/thought-type.wav`, loop: false },
   swoosh: { src: `${import.meta.env.BASE_URL}audio/thought-swoosh.wav`, loop: false },
   blink: { src: `${import.meta.env.BASE_URL}audio/character-blink.wav`, loop: false },
+  bye: { src: `${import.meta.env.BASE_URL}audio/character-bye.wav`, loop: false },
 } satisfies Record<Cue, { src: string; loop: boolean }>
 
 export class AudioManager {
@@ -32,36 +33,15 @@ export class AudioManager {
   private state: AudioState = { muted: true, volume: experience.audio.musicVolume, status: 'idle', message: '', lastCue: '' }
   private fadeTimer: ReturnType<typeof setTimeout> | undefined
   private duckTimer: ReturnType<typeof setTimeout> | undefined
-  private farewell: SpeechSynthesisUtterance | undefined
+  private farewellId: number | undefined
+  private musicFinished = false
 
   sayBye = () => {
-    if (!this.active || this.state.muted || this.state.status !== 'playing' || !('speechSynthesis' in window)) return
+    if (!this.active || this.state.muted || this.state.status !== 'playing') return
     this.stopBye()
-    const voice = new SpeechSynthesisUtterance('Bye!')
-    voice.lang = 'en-US'; voice.pitch = 1.25; voice.rate = 1.05; voice.volume = experience.audio.farewellVolume
-    const available = window.speechSynthesis.getVoices()
-    voice.voice = available.find(item => item.lang === 'en-US' && item.localService) ?? available.find(item => item.lang.startsWith('en')) ?? null
-    this.farewell = voice
-    const duck = () => {
-      if (this.farewell === voice) this.duckMusic(experience.audio.farewellDuckTo, experience.audio.farewellDuckHoldMs)
-    }
-    const release = () => {
-      if (this.farewell !== voice) return
-      this.farewell = undefined
-      this.restoreMusic()
-    }
-    voice.onstart = duck
-    voice.onend = release
-    voice.onerror = release
-    duck()
-    window.speechSynthesis.speak(voice)
+    this.cue('bye')
   }
-  stopBye = () => {
-    if (!this.farewell) return
-    this.farewell = undefined
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel()
-    this.restoreMusic()
-  }
+  stopBye = () => { this.stopCue('bye') }
 
   subscribe = (listener: () => void) => {
     this.listeners.add(listener)
@@ -73,7 +53,7 @@ export class AudioManager {
     this.listeners.forEach((listener) => listener())
   }
   /** Preload short effects and register touch unlock before the first gesture. */
-  prepare = () => { this.sound('jump'); this.sound('land'); this.sound('bubble'); this.sound('glass'); this.sound('peek'); this.sound('shutter'); this.sound('type'); this.sound('swoosh'); this.sound('blink') }
+  prepare = () => { this.sound('jump'); this.sound('land'); this.sound('bubble'); this.sound('glass'); this.sound('peek'); this.sound('shutter'); this.sound('type'); this.sound('swoosh'); this.sound('blink'); this.sound('bye') }
   startOnLoad = () => {
     this.autoplayPending = true
     this.startPlayback()
@@ -89,18 +69,19 @@ export class AudioManager {
       if (cue === 'mountain') {
         sound = new LoopingMusic(cues.mountain.src, {
           onplay: () => {
-            if (!this.active) { sound?.stop(); return }
+            if (!this.active || this.musicFinished) { sound?.stop(); return }
             this.autoplayPending = false
             sound?.mute(this.state.muted)
             sound?.fade(0, this.state.volume, 700)
             this.update({ status: this.state.muted ? 'muted' : 'playing', message: '' })
           },
           onplayerror: error => {
+            if (this.musicFinished) return
             if (this.autoplayPending && error instanceof DOMException && error.name === 'NotAllowedError' && this.state.status !== 'error') this.update({ muted: true, status: 'muted', message: '' })
             else this.fail('mountain')
           },
           onloaderror: () => {
-            if (!this.active) return
+            if (!this.active || this.musicFinished) return
             this.autoplayPending = false
             this.update({ muted: true, status: 'error', message: 'Sound couldn’t start. Tap the speaker to try again.' })
           },
@@ -115,10 +96,15 @@ export class AudioManager {
         onloaderror: () => {
           sound?.unload()
           this.sounds.delete(cue)
+          if (cue === 'bye') { this.farewellId = undefined; this.restoreMusic() }
           this.fail(cue)
         },
-        onplayerror: () => {
+        onplayerror: id => {
+          if (cue === 'bye' && this.farewellId === id) { this.farewellId = undefined; this.restoreMusic() }
           this.fail(cue)
+        },
+        onend: id => {
+          if (cue === 'bye' && this.farewellId === id) { this.farewellId = undefined; this.restoreMusic() }
         },
         onplay: () => {
           if (!this.active) { sound?.stop(); return }
@@ -135,7 +121,7 @@ export class AudioManager {
     }
   }
   private retryAfterUnlock(sound: Howl | LoopingMusic) {
-    if (!this.active || this.state.muted || this.state.status !== 'error' || this.sounds.get('mountain') !== sound) return
+    if (!this.active || this.musicFinished || this.state.muted || this.state.status !== 'error' || this.sounds.get('mountain') !== sound) return
     this.update({ status: 'loading', message: '' })
     this.ambientId = sound.play(this.ambientId)
   }
@@ -158,6 +144,7 @@ export class AudioManager {
       void context.resume().then(() => this.retryAfterUnlock(ambient)).catch(() => this.fail('mountain'))
     }
     this.sounds.forEach((sound) => sound.mute(false))
+    if (this.musicFinished) { this.update({ status: 'playing' }); return }
     ambient.volume(this.state.volume)
     if (!ambient.playing(this.ambientId)) this.ambientId = ambient.play(this.ambientId)
     else this.update({ status: 'playing' })
@@ -172,30 +159,52 @@ export class AudioManager {
   }
   /** Restart the selected music segment without changing mute or requesting playback. */
   restartMusic = () => {
-    if (this.active && this.ambientId !== undefined) this.sounds.get('mountain')?.seek(0, this.ambientId)
+    const finished = this.musicFinished
+    this.musicFinished = false
+    const ambient = this.sounds.get('mountain')
+    if (this.active && ambient) {
+      ambient.seek(0, this.ambientId)
+      if (finished) this.ambientId = ambient.play()
+    }
   }
-  stopCue = (cue: Exclude<Cue, 'mountain'>) => { this.sounds.get(cue)?.stop() }
+  /** Finish the soundtrack without suppressing the one-shot farewell or later UI cues. */
+  finishMusic = () => {
+    this.musicFinished = true
+    this.autoplayPending = false
+    clearTimeout(this.duckTimer)
+    this.sounds.get('mountain')?.stop()
+    this.ambientId = undefined
+  }
+  stopCue = (cue: Exclude<Cue, 'mountain'>) => {
+    const sound = this.sounds.get(cue)
+    const restore = cue === 'bye' && this.farewellId !== undefined
+    if (cue === 'bye') this.farewellId = undefined
+    sound?.stop()
+    if (restore) this.restoreMusic()
+  }
   cue = (cue: Exclude<Cue, 'mountain'>, index = 0) => {
     if (!this.active || this.state.muted || this.state.status !== 'playing') return
     const sound = this.sound(cue)
     sound.mute(false)
-    sound.volume(cue === 'blink' ? experience.audio.blinkVolume : cue === 'type' ? experience.audio.typeVolume : cue === 'swoosh' ? experience.audio.swooshVolume : cue === 'shutter' ? experience.audio.shutterVolume : cue === 'peek' ? 0.24 : cue === 'glass' ? 0.3 : cue === 'bubble' ? 0.55 : cue === 'jump' ? experience.audio.jumpVolume : experience.audio.landVolume)
+    sound.volume(cue === 'bye' ? experience.audio.farewellVolume : cue === 'blink' ? experience.audio.blinkVolume : cue === 'type' ? experience.audio.typeVolume : cue === 'swoosh' ? experience.audio.swooshVolume : cue === 'shutter' ? experience.audio.shutterVolume : cue === 'peek' ? 0.24 : cue === 'glass' ? 0.3 : cue === 'bubble' ? 0.55 : cue === 'jump' ? experience.audio.jumpVolume : experience.audio.landVolume)
     if (cue === 'type') sound.rate(0.96 + index % 3 * .04)
     if (cue === 'bubble' || cue === 'peek') sound.rate(cue === 'peek' ? 0.72 + index * 0.025 : 0.9 + index * 0.07)
-    sound.play()
-    if (cue === 'blink') this.duckMusic(experience.audio.blinkDuckTo, experience.audio.blinkDuckHoldMs)
+    const id = sound.play()
+    if (cue === 'bye') { this.farewellId = id; this.duckMusic(experience.audio.farewellDuckTo, experience.audio.farewellDuckHoldMs) }
+    else if (cue === 'blink') this.duckMusic(experience.audio.blinkDuckTo, experience.audio.blinkDuckHoldMs)
     else if (cue === 'jump' || cue === 'land') this.duckMusic(experience.audio.duckTo, experience.audio.duckHoldMs)
   }
   private restoreMusic = () => {
     clearTimeout(this.duckTimer)
     const ambient = this.sounds.get('mountain')
-    if (this.active && !this.state.muted) ambient?.fade(ambient.volume(), this.state.volume, experience.audio.restoreMs)
+    if (this.active && !this.state.muted && !this.musicFinished) ambient?.fade(ambient.volume(), this.state.volume, experience.audio.restoreMs)
   }
   private duckMusic(ratio: number, holdMs: number) {
+    if (this.musicFinished) return
     clearTimeout(this.duckTimer)
     const ambient = this.sounds.get('mountain')
     ambient?.fade(ambient.volume(), this.state.volume * ratio, 80)
-    // A bounded fallback also restores music if a mobile speech engine omits onend.
+    // A bounded fallback restores music even if a cue is interrupted by the device.
     this.duckTimer = setTimeout(this.restoreMusic, holdMs)
   }
   fadeOut = (milliseconds = 500) => {

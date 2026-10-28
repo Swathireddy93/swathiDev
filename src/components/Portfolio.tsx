@@ -13,15 +13,16 @@ import { usePortfolioStory } from '../hooks/usePortfolioStory'
 import { MovieControls } from './MovieControls'
 import { menuPosition } from '../story/menuPosition'
 import { MovieEnding } from './MovieEnding'
+import { PortfolioCredits } from './PortfolioCredits'
 
-export function Portfolio({ audio, onReplay, reducedMotion, fallback, ending, onMovieEnd, onMovieLoop, onMovieExit }: { audio: AudioManager; onReplay: () => void; reducedMotion: boolean; fallback: boolean; ending: boolean; onMovieEnd: () => void; onMovieLoop: () => void; onMovieExit: () => void }) {
+export function Portfolio({ audio, onReplay, reducedMotion, fallback, ending, onMovieEnd, onMovieExit, controlsHost }: { audio: AudioManager; onReplay: () => void; reducedMotion: boolean; fallback: boolean; ending: boolean; onMovieEnd: () => void; onMovieExit: () => void; controlsHost: HTMLDivElement | null }) {
   const [project, setProject] = useState<Project | null>(null)
   const [year, setYear] = useState(2018)
   const [selectedSection, setSelectedSection] = useState<string | null>(null)
   const [sectionVisit, setSectionVisit] = useState(0)
   const selectSection = useCallback((section: string) => { setSelectedSection(section); setSectionVisit(value => value + 1); if (section === 'projects') setYear(2018) }, [])
-  const story = usePortfolioStory({ reducedMotion: reducedMotion || fallback, navigate: selectSection, year: setYear, ending: onMovieEnd, restart: onMovieLoop })
-  const exitEnding = () => { story.explore(); onMovieExit() }
+  const story = usePortfolioStory({ reducedMotion: reducedMotion || fallback, navigate: selectSection, year: setYear, ending: onMovieEnd })
+  const exitEnding = () => { story.finish(); onMovieExit(); returnToMenu() }
   const navigate = (section: string) => { story.explore(); selectSection(section) }
   const guideKey = (section: string) => `${section}-${selectedSection === section ? sectionVisit : 0}`
   const returnToMenu = () => {
@@ -109,10 +110,10 @@ export function Portfolio({ audio, onReplay, reducedMotion, fallback, ending, on
       </section>
 
       <section id="contact" className="section contact-section content-width" aria-labelledby="contact-title"><CharacterGuide key={guideKey('contact')} section="contact" onReturn={returnToMenu} reducedMotion={reducedMotion} /><p className="eyebrow">05 / LET’S CONNECT</p><div className="contact-scene"><h2 id="contact-title"><span>What could we</span><span>build together?</span></h2><ThinkingCharacter key={`thinker-${guideKey('contact')}`} reducedMotion={reducedMotion} /></div><a className="contact-email" href={`mailto:${profile.email}`}>{profile.email}<span aria-hidden="true">↗</span></a><div className="contact-links">{profile.github ? <a className="text-link" href={profile.github} target="_blank" rel="noreferrer">GitHub ↗</a> : <span className="text-link github-placeholder">GitHub link coming soon</span>}<a className="text-link" href={profile.linkedin} target="_blank" rel="noreferrer">LinkedIn ↗</a><a className="text-link" href={profile.resume} target="_blank" rel="noreferrer">Résumé ↗</a></div></section>
-      <footer className="site-footer content-width"><span className="pixel">SWATHI / MADE WITH PERSPECTIVE</span><span>{fallback ? 'A quieter, static view.' : 'Early prototype · artwork in progress'}</span><a href="#top">Back to top ↑</a></footer>
+      <footer className="site-footer content-width"><PortfolioCredits fallback={fallback} /><a href="#top">Back to top ↑</a></footer>
       </div>
-      <MovieControls story={story.snapshot} onPause={story.pause} onPlay={story.play} />
-      {ending && <MovieEnding audio={audio} playing={story.snapshot.status === 'playing'} onExit={exitEnding} />}
+      <MovieControls story={story.snapshot} onPause={story.pause} onPlay={story.play} host={controlsHost} />
+      {ending && <MovieEnding audio={audio} playing={story.snapshot.status === 'playing' || story.snapshot.status === 'complete'} fallback={fallback} onExit={exitEnding} />}
       <CaseStudy project={project} onClose={() => setProject(null)} />
     </main>
   )

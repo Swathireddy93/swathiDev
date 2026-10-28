@@ -40,9 +40,21 @@ configured in `experience.timing` and `experience.audio`. Muting suppresses the
 cue; pausing or skipping the introduction stops it. No new character art or
 external recording was created.
 
-The close-up blips now play at full cue volume with a brief music dip to 22% of
-the usual background level. The browser's cheerful "Bye!" uses full speech volume
-while music drops to 10% of its usual level. Speech completion, errors or cancel
-restore the mix smoothly; a three-second fallback handles missing mobile speech
-events. Mute continues to silence both. These levels and holds live in
-`experience.audio`; the original audio files remain unchanged.
+The close-up blips play at full cue volume with a brief music dip to 22% of
+the usual background level. The closing voice uses full cue volume while music
+drops to 10% of its usual level. Cue completion, errors or cancellation restore
+the mix smoothly, with a bounded fallback for device interruptions. Mute continues
+to silence both. Levels and holds live in `experience.audio`.
+
+`character-bye.wav` is an original 0.81-second local Kokoro-82M “Bye!” using the
+Heart voice. `scripts/generate_farewell.py --models /path/to/models` recreates it.
+A 1.22 pitch multiplier (about +3.4 semitones), light 8-bit crushing at 28% mix,
+subtle vocal wobble and band limiting produce a playful pixel-game texture.
+Short edge fades and a 0.85 peak limit keep it click-free and unclipped.
+Cached models and the existing optional authoring tools are used; no paid API or
+new application dependency is required.
+
+The ending's first wave triggers this clip once. Howler handles local playback,
+including devices without browser TTS; mute, pause, ending exit and disposal stop
+it safely. There is no spoken Hi in the opening, and the old greeting asset is
+removed. The existing dialogue typing, blinks, music and shutter stay in place.

@@ -10,7 +10,7 @@ export interface StorySnapshot {
   beat: string
   peek: StoryChapter | null
   year?: number
-  focus?: StoryChapter | 'menu' | 'footer'
+  focus?: StoryChapter | 'menu'
   exploring?: boolean
 }
 export const initialStory: StorySnapshot = { status: 'waiting', chapter: 'about', beat: 'waiting', peek: null, focus: 'menu' }
@@ -19,7 +19,6 @@ interface StoryCallbacks {
   navigate: (chapter: StoryChapter) => void
   year: (year: number) => void
   ending: () => void
-  restart: () => void
 }
 const clamp = (value: number, max: number) => Math.max(0, Math.min(value, max))
 
@@ -70,9 +69,13 @@ export class StoryPlayer {
       if (menu) window.scrollTo({ top: menuPosition(menu), behavior: 'instant' })
       this.idle = 0; this.idleY = window.scrollY
     }
-    if (this.ready >= 2) this.rebase()
+    if (this.ready >= 2 && this.index < this.beats.length) this.rebase()
   }
   pause = (exploring = false) => {
+    if (this.state.status === 'complete') {
+      if (exploring) { this.state = { ...this.state, exploring: true, focus: undefined }; this.emit() }
+      return
+    }
     if (this.state.status === 'paused') {
       if (exploring && !this.state.exploring) { this.state = { ...this.state, exploring: true, focus: undefined }; this.emit() }
       return
@@ -85,7 +88,7 @@ export class StoryPlayer {
   }
   play = () => {
     if (this.disposed || this.state.status === 'playing') return
-    if (this.state.status === 'complete') { this.restart(); return }
+    if (this.state.status === 'complete') return
     if (!this.started) {
       this.state = { ...this.state, status: 'waiting', exploring: false, focus: 'menu' }
       const menu = document.getElementById('portfolio-menu')
@@ -107,6 +110,11 @@ export class StoryPlayer {
     this.state = { ...initialStory, status: 'playing' }
     this.begin(); this.queue()
   }
+  finish = () => {
+    this.halt()
+    this.state = { ...this.state, status: 'complete', beat: 'complete', peek: null, focus: undefined, exploring: true }
+    this.emit()
+  }
   dispose() {
     this.disposed = true; this.halt()
     document.documentElement.classList.remove('is-story-playing', 'is-story-paused')
@@ -114,9 +122,8 @@ export class StoryPlayer {
   }
 
   private focusFor(beat: StoryBeat): StorySnapshot['focus'] {
-    if (beat.id.startsWith('footer:')) return 'footer'
     if (beat.kind === 'peek') return 'menu'
-    if (beat.kind === 'read' || beat.kind === 'year' || beat.kind === 'hold') return beat.chapter
+    if (beat.kind === 'read' || beat.kind === 'year') return beat.chapter
     return undefined
   }
 
@@ -138,12 +145,20 @@ export class StoryPlayer {
     const max = document.documentElement.scrollHeight - window.innerHeight
     if (beat.kind === 'menu') return menuPosition(target)
     const start = window.scrollY + rect.top - viewport.top
-    if (beat.kind === 'read') return clamp(Math.max(this.from, window.scrollY + rect.bottom - viewport.bottom), max)
+    if (beat.kind === 'read') {
+      let bottom = rect.bottom
+      // Credits belong to the same short final scene, without another travel/hold.
+      if (beat.chapter === 'contact') {
+        const footer = document.querySelector<HTMLElement>('.site-footer')
+        if (footer) bottom = Math.max(bottom, footer.getBoundingClientRect().bottom - (parseFloat(getComputedStyle(footer).paddingBottom) || 0))
+      }
+      return clamp(Math.max(this.from, window.scrollY + bottom - viewport.bottom), max)
+    }
     return clamp(start, max)
   }
   private readingPace(beat: StoryBeat) {
     const timing = experience.story
-    if (beat.id === 'footer:read') return { lead: 1000, tail: 1200 }
+    if (beat.chapter === 'contact') return { lead: 600, tail: 2200 }
     if (beat.id === 'projects:introduction' && window.matchMedia('(max-width: 700px)').matches) return { lead: 3000, tail: timing.projectTailMs }
     return beat.chapter === 'projects' ? { lead: timing.projectLeadMs, tail: timing.projectTailMs } : { lead: timing.leadMs, tail: timing.tailMs }
   }
@@ -158,7 +173,6 @@ export class StoryPlayer {
   private measure(beat: StoryBeat) {
     this.from = window.scrollY
     const timing = experience.story
-    if (beat.kind === 'hold') return timing.contactHoldMs
     if (beat.kind === 'ending') return timing.endingMs
     if (beat.kind === 'peek') return timing.peekMs
     if (beat.kind === 'year') return experience.journey.hopMs + (beat.target && Math.abs(this.destination(beat) - this.from) > 1 ? timing.yearMs : 0)
@@ -168,7 +182,7 @@ export class StoryPlayer {
       const speed = mobile ? timing.mobileTravelPixelsPerSecond : timing.travelPixelsPerSecond
       return Math.max(mobile ? timing.mobileTravelMs : timing.travelMs, Math.min(timing.maxTravelMs, distance / speed * 1000))
     }
-    if (beat.id === 'footer:read') return timing.footerHoldMs
+    if (beat.chapter === 'contact') return timing.contactReadMs
     const target = this.target(beat)
     const words = target?.innerText.trim().split(/\s+/).length ?? 0
     const distance = Math.abs(this.destination(beat) - this.from)
@@ -206,7 +220,6 @@ export class StoryPlayer {
           this.index++
           if (this.index === this.beats.length) {
             this.halt(); this.state = { ...this.state, status: 'complete', beat: 'complete', peek: null }; this.emit()
-            this.callbacks.restart()
             return
           }
           this.begin()

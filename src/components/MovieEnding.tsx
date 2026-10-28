@@ -2,8 +2,9 @@ import { useEffect, useRef, useSyncExternalStore } from 'react'
 import type { AudioManager } from '../audio/AudioManager'
 import { PixelFigure } from './PixelFigure'
 import { useCharacterActivity } from '../hooks/useCharacterActivity'
+import { PortfolioCredits } from './PortfolioCredits'
 
-export function MovieEnding({ audio, playing, onExit }: { audio: AudioManager; playing: boolean; onExit: () => void }) {
+export function MovieEnding({ audio, playing, fallback, onExit }: { audio: AudioManager; playing: boolean; fallback: boolean; onExit: () => void }) {
   const character = useRef<SVGSVGElement>(null)
   const greeted = useRef(false)
   const sound = useSyncExternalStore(audio.subscribe, audio.snapshot)
@@ -20,12 +21,12 @@ export function MovieEnding({ audio, playing, onExit }: { audio: AudioManager; p
     document.addEventListener('keydown', escape)
     return () => document.removeEventListener('keydown', escape)
   }, [onExit])
-  return <section className="movie-ending" data-testid="movie-ending" data-playing={playing} aria-labelledby="movie-ending-title" onWheel={onExit} onTouchStart={onExit}>
+  return <section className="movie-ending" data-testid="movie-ending" data-playing={playing} aria-label="Thanks for watching!">
     <div className="ending-content">
       <svg className="ending-character" ref={character} viewBox="0 0 64 88" aria-hidden="true" focusable="false" shapeRendering="crispEdges"><g transform="translate(6 4)"><PixelFigure waving /></g></svg>
-      <h2 id="movie-ending-title" className="pixel">THE END</h2>
       <p className="pixel">Thanks for watching!</p>
       <button className="ending-exit pixel" type="button" onClick={onExit}>Back to portfolio →</button>
     </div>
+    <div className="ending-credits"><PortfolioCredits fallback={fallback} /></div>
   </section>
 }

@@ -157,8 +157,22 @@ test('an existing section link takes priority over automatic playback', async ({
   await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'paused')
 })
 
-for (const width of [1440, 390]) test(`the movie plays every chapter then waves goodbye and loops through loading at ${width}px`, async ({ page }, info) => {
+for (const width of [1440, 390]) test(`the movie plays once, preserves credits and returns to manual menus at ${width}px`, async ({ page }, info) => {
   await page.setViewportSize({ width, height: 900 })
+  await page.addInitScript(() => {
+    const play = HTMLMediaElement.prototype.play
+    HTMLMediaElement.prototype.play = function () {
+      if (this.src.includes('portfolio-background-loop')) Reflect.set(window, 'movieMusic', this)
+      return play.call(this)
+    }
+    const starts: string[] = []
+    Reflect.set(window, 'movieByeStarts', starts)
+    const start = AudioBufferSourceNode.prototype.start
+    AudioBufferSourceNode.prototype.start = function (...args) {
+      if (this.buffer && Math.abs(this.buffer.duration - .808417) < .001) starts.push(document.querySelector('.app')?.getAttribute('data-phase') ?? '')
+      return Reflect.apply(start, this, args)
+    }
+  })
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
   await openStory(page)
@@ -178,7 +192,7 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
       await expect(page.locator('#portfolio-menu')).toBeInViewport({ ratio: .7 })
       await expectClearOfHeader(page, '#hero-title')
     }
-    if (beat.endsWith(':read') && !beat.startsWith('projects:') && !beat.startsWith('footer:')) await expectClearOfHeader(page, `#${beat.split(':')[0]} .section-character-guide`)
+    if (beat.endsWith(':read') && !beat.startsWith('projects:')) await expectClearOfHeader(page, `#${beat.split(':')[0]} .section-character-guide`)
     if (/projects:\d+:year/.test(beat)) {
       years.add((await page.locator('#career-panel').getAttribute('data-year'))!)
       await expect(page.getByRole('button', { name: 'Pause timeline', exact: true })).toHaveAttribute('aria-pressed', 'true')
@@ -186,20 +200,22 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
     }
     await expect(page.getByRole('dialog')).not.toBeVisible()
     if (beat === 'experiments:read') await page.screenshot({ path: info.outputPath('beyond-work-story.png') })
-    if (beat === 'footer:read') {
+    if (beat === 'contact:read') {
       footerSeen = true
-      await expect(page.getByTestId('portfolio')).toHaveAttribute('data-story-focus', 'footer')
+      await page.clock.runFor(64)
+      await expect(page.getByTestId('portfolio')).toHaveAttribute('data-story-focus', 'contact')
+      await page.clock.runFor(3000)
       for (const text of ['SWATHI / MADE WITH PERSPECTIVE', 'Early prototype · artwork in progress']) {
         await expect(page.getByText(text, { exact: true })).toBeInViewport({ ratio: 1 })
       }
+      await page.clock.runFor(1700)
+      for (const text of ['SWATHI / MADE WITH PERSPECTIVE', 'Early prototype · artwork in progress']) {
+        await expect(page.locator('.site-footer').getByText(text, { exact: true })).toBeInViewport({ ratio: 1 })
+      }
       await page.screenshot({ path: info.outputPath(`movie-footer-${width}.png`) })
-      await page.clock.runFor(4000)
       await expect(page.getByTestId('movie-ending')).toHaveCount(0)
-      await advanceBeat(page)
-    } else if (beat === 'contact:hold') {
-      await page.clock.runFor(4400)
-      await expect(page.getByTestId('movie-ending')).toHaveCount(0)
-      await page.clock.runFor(200)
+      await page.clock.runFor(400)
+      await expect(page.getByTestId('movie-ending')).toBeVisible()
     } else await advanceBeat(page)
     if (beat === 'projects:2026:year') await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'experiments:menu')
   }
@@ -209,9 +225,11 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
   expect(footerSeen).toBe(true)
   const ending = page.getByTestId('movie-ending')
   await expect(ending).toHaveCSS('background-color', 'rgb(0, 0, 0)')
-  await expect(ending.getByRole('heading', { name: 'THE END' })).toBeVisible()
+  await expect(ending.getByText('THE END', { exact: true })).toHaveCount(0)
   await expect(ending.getByText('Thanks for watching!', { exact: true })).toBeVisible()
   await expect(ending.locator('.farewell-wave')).toHaveCount(1)
+  await page.clock.runFor(200)
+  expect(await page.evaluate(() => Reflect.get(window, 'movieByeStarts'))).toEqual(['ending'])
   expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false)
   expect(errors).toEqual([])
   await page.screenshot({ path: info.outputPath(`movie-ending-${width}.png`) })
@@ -219,28 +237,102 @@ for (const width of [1440, 390]) test(`the movie plays every chapter then waves 
   await expect(ending.locator('.farewell-wave')).toHaveCSS('animation-play-state', 'paused')
   await page.clock.fastForward(10_000)
   await expect(ending).toBeVisible()
-  if (width === 390) {
-    await page.keyboard.press('Escape')
-    await expect(ending).toHaveCount(0)
-    await expect(page.locator('.site-footer')).toBeInViewport()
-    await page.clock.fastForward(60_000)
-    await expect(page.locator('.app')).toHaveAttribute('data-phase', 'portfolio')
-    await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'paused')
-  } else {
-    const muted = await page.locator('.sound-toggle').getAttribute('aria-label')
-    await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
-    await page.clock.runFor(4400)
-    await expect(ending).toBeVisible()
-    await page.clock.runFor(700)
+  await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
+  await page.clock.runFor(4400)
+  await expect(ending).toBeVisible()
+  await page.clock.runFor(700)
+  await expect(page.locator('.movie-controls')).toHaveCount(0)
+  await expect(ending).toBeVisible()
+  expect(await page.evaluate(() => (Reflect.get(window, 'movieMusic') as HTMLAudioElement).paused)).toBe(true)
+  for (const text of ['SWATHI / MADE WITH PERSPECTIVE', 'Early prototype · artwork in progress']) {
+    await expect(ending.getByText(text, { exact: true })).toBeInViewport({ ratio: 1 })
+  }
+  await page.clock.fastForward(120_000)
+  await expect(page.locator('.app')).toHaveAttribute('data-phase', 'ending')
+  expect(await page.evaluate(() => Reflect.get(window, 'movieByeStarts'))).toEqual(['ending'])
+  expect(await page.evaluate(() => (Reflect.get(window, 'movieMusic') as HTMLAudioElement).paused)).toBe(true)
+  await page.screenshot({ path: info.outputPath(`persistent-goodbye-${width}.png`) })
+  await ending.getByRole('button', { name: 'Back to portfolio' }).click()
+  await page.clock.runFor(64)
+  await expect(ending).toHaveCount(0)
+  await expect(page.locator('.app')).toHaveAttribute('data-phase', 'portfolio')
+  await expect(page.locator('#hero-title')).toBeInViewport({ ratio: 1 })
+  for (const link of await page.locator('#portfolio-menu').getByRole('link').all()) await expect(link).toBeInViewport({ ratio: 1 })
+  await expect(page.getByTestId('portfolio')).not.toHaveAttribute('data-story-focus')
+  await page.clock.runFor(3000)
+  const manualY = await page.evaluate(() => scrollY)
+  await page.clock.fastForward(120_000)
+  expect(await page.evaluate(() => scrollY)).toBe(manualY)
+  await expect(page.locator('.movie-controls')).toHaveCount(0)
+  expect(await page.evaluate(() => (Reflect.get(window, 'movieMusic') as HTMLAudioElement).paused)).toBe(true)
+  await page.locator('#portfolio-menu').getByRole('link', { name: 'About Me', exact: true }).click()
+  await expect(page.locator('#about .section-character-guide')).toBeInViewport()
+  await page.clock.fastForward(120_000)
+  await expect(page.locator('#about .section-character-guide')).toBeInViewport()
+  await page.locator('#about .guide-back').click()
+  await page.clock.runFor(64)
+  await expect(page.locator('#hero-title')).toBeInViewport({ ratio: 1 })
+  if (width === 1440) {
+    await page.getByRole('button', { name: 'Replay the introduction' }).click()
     await expect(page.locator('.app')).toHaveAttribute('data-phase', 'loading')
-    await expect(page.getByTestId('loading-screen')).toBeVisible()
-    await expect(page.locator('.sound-toggle')).toHaveAttribute('aria-label', muted!)
-    await expect(ending).toHaveCount(0)
     await page.clock.runFor(5000)
     await expect(page.locator('.app')).toHaveAttribute('data-phase', 'playing')
-    await page.getByRole('button', { name: 'Skip intro', exact: true }).click()
-    await expect(page.locator(controls)).toHaveAttribute('data-story-status', 'waiting')
   }
+})
+
+test.describe('touch-phone finish', () => {
+  test.use({ isMobile: true, hasTouch: true })
+test('a short mobile Contact finish lasts five playing seconds, preserves credits and resumes after pause', async ({ page }, info) => {
+  await page.setViewportSize({ width: 320, height: 640 })
+  await openStory(page)
+  await page.clock.fastForward(7000)
+  await page.clock.runFor(64)
+  for (let step = 0; step < 60; step++) {
+    if (await page.locator(controls).getAttribute('data-story-beat') === 'contact:read') break
+    await advanceBeat(page)
+  }
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'contact:read')
+  await page.clock.runFor(2000)
+  await page.getByRole('button', { name: 'Pause the movie', exact: true }).click()
+  const position = await page.evaluate(() => scrollY)
+  await page.clock.fastForward(60_000)
+  expect(await page.evaluate(() => scrollY)).toBe(position)
+  await expect(page.getByTestId('movie-ending')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Play the movie', exact: true }).click()
+  await page.clock.runFor(2800)
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'contact:read')
+  await expect(page.locator('.contact-email')).toBeInViewport({ ratio: 1 })
+  await expect(page.getByText('SWATHI / MADE WITH PERSPECTIVE', { exact: true })).toBeInViewport({ ratio: 1 })
+  await expect(page.getByText('Early prototype · artwork in progress', { exact: true })).toBeInViewport({ ratio: 1 })
+  await page.screenshot({ path: info.outputPath('contact-five-seconds-320.png') })
+  await page.clock.runFor(400)
+  await expect(page.getByTestId('movie-ending')).toBeVisible()
+  await expect(page.locator(controls)).toHaveAttribute('data-story-beat', 'movie:ending')
+  await page.clock.runFor(6000)
+  await expect(page.locator('.movie-controls')).toHaveCount(0)
+  await page.setViewportSize({ width: 320, height: 480 })
+  await page.clock.runFor(100)
+  const ending = page.getByTestId('movie-ending')
+  await ending.dispatchEvent('touchstart')
+  await expect(ending).toBeVisible()
+  await expect(ending.getByText('SWATHI / MADE WITH PERSPECTIVE', { exact: true })).toBeInViewport({ ratio: 1 })
+  const overlaps = await ending.locator('.ending-credits').evaluate(credits => {
+    const r = credits.getBoundingClientRect()
+    const speaker = document.querySelector('.sound-toggle')!.getBoundingClientRect()
+    const content = document.querySelector('.ending-content')!.getBoundingClientRect()
+    const intersects = (other: DOMRect) => r.left < other.right && r.right > other.left && r.top < other.bottom && r.bottom > other.top
+    return intersects(speaker) || intersects(content)
+  })
+  expect(overlaps).toBe(false)
+  await page.screenshot({ path: info.outputPath('persistent-goodbye-touch-320.png') })
+  await ending.getByRole('button', { name: 'Back to portfolio' }).tap()
+  await page.clock.runFor(64)
+  await expect(ending).toHaveCount(0)
+  await expect(page.locator('#hero-title')).toBeInViewport({ ratio: 1 })
+  await page.clock.fastForward(60_000)
+  await expect(page.locator('.movie-controls')).toHaveCount(0)
+})
+
 })
 
 test('manual wheel, touch, keyboard and menu choices interrupt without a later scroll jump', async ({ page }) => {

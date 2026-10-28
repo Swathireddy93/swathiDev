@@ -3,11 +3,14 @@ import { photography } from '../content/photography'
 import type { AudioManager } from '../audio/AudioManager'
 import { experience } from '../config/experience'
 import { PlaybackTimers } from '../story/PlaybackTimers'
+import { useCharacterActivity } from '../hooks/useCharacterActivity'
 
 export function PhotographySection({ audio, reducedMotion }: { audio: AudioManager; reducedMotion: boolean }) {
   const [imageFailed, setImageFailed] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
   const photo = useRef<HTMLDivElement>(null)
+  const links = useRef<HTMLDivElement>(null)
+  useCharacterActivity(links)
   useEffect(() => {
     const element = photo.current
     if (!element || !imageLoaded || imageFailed || reducedMotion) return
@@ -56,7 +59,19 @@ export function PhotographySection({ audio, reducedMotion }: { audio: AudioManag
       <h3 id="photography-title">{photography.title}</h3>
       <p className="photography-tagline">{photography.tagline}</p>
       {photography.paragraphs.map(paragraph => <p key={paragraph}>{paragraph}</p>)}
-      <a href={photography.instagram} target="_blank" rel="noreferrer" className="text-link">Explore my photography — {photography.handle} ↗</a>
+      <p className="photography-cta">Go on, have a peek 👀</p>
+      <div className="photography-links" ref={links}>
+        <a href={photography.instagram} target="_blank" rel="noreferrer" className="photography-link">
+          <span className="photography-link-art" aria-hidden="true"><svg viewBox="0 0 20 16" fill="none" stroke="currentColor" shapeRendering="crispEdges"><path d="M2 4h4l2-2h5l2 2h3v10H2z" /><path d="M8 6h5v5H8zM15 6h1" /></svg><span>↗</span></span>
+          <span className="photography-link-title">The Editorial Side</span>
+          <span className="photography-link-description">Fashion, portraits &amp; creative campaigns</span><span className="photography-handle">{photography.handle}</span>
+        </a>
+        <a href={photography.personalInstagram} target="_blank" rel="noreferrer" className="photography-link">
+          <span className="photography-link-art" aria-hidden="true"><svg viewBox="0 0 20 16" fill="none" stroke="currentColor" shapeRendering="crispEdges"><path d="M2 2h16v12H2zM3 12l5-6 4 5 2-3 3 4" /><path d="M13 4h2v2h-2z" /></svg><span>↗</span></span>
+          <span className="photography-link-title">People, Places &amp; Pretty Views</span>
+          <span className="photography-link-description">Travel, California landscapes &amp; the people around me</span><span className="photography-handle">{photography.personalHandle}</span>
+        </a>
+      </div>
     </div>
   </section>
 }

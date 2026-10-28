@@ -11,6 +11,7 @@ import { SceneBoundary } from './components/SceneBoundary'
 import { CityFlight } from './scenes/CityFlight'
 import { TelevisionSceneReveal } from './components/TelevisionSceneReveal'
 import { LandingLensFlare } from './components/LandingLensFlare'
+import { PlaybackOverlay } from './components/PlaybackOverlay'
 import { experience } from './config/experience'
 
 const MountainWorld = lazy(() => import('./scenes/MountainWorld'))
@@ -32,6 +33,7 @@ export default function App() {
   const [fading, setFading] = useState(false)
   const [sceneStage, setSceneStage] = useState('mountains')
   const [introCycle, setIntroCycle] = useState(0)
+  const [controlsHost, setControlsHost] = useState<HTMLDivElement | null>(null)
   const assetsReady = useRef(false)
   const firstFrameReady = useRef(false)
   const landingLens = useRef<HTMLDivElement>(null)
@@ -57,6 +59,7 @@ export default function App() {
   const land = useCallback(() => { setSceneStage('landed'); finish() }, [finish])
   const resetIntroduction = useCallback((focus: boolean) => {
     if (reducedMotion || fallback) return
+    audio.restartMusic()
     assetsReady.current = false
     firstFrameReady.current = false
     setFading(false)
@@ -65,14 +68,9 @@ export default function App() {
     setPhase('loading')
     window.scrollTo({ top: 0, behavior: 'instant' })
     if (focus) requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('.skip-intro')?.focus())
-  }, [reducedMotion, fallback])
+  }, [audio, reducedMotion, fallback])
   const replay = useCallback(() => resetIntroduction(true), [resetIntroduction])
-  const endMovie = useCallback(() => setPhase('ending'), [])
-  const loopMovie = useCallback(() => {
-    history.replaceState(history.state, '', location.pathname + location.search)
-    audio.restartMusic()
-    resetIntroduction(false)
-  }, [audio, resetIntroduction])
+  const endMovie = useCallback(() => { audio.finishMusic(); setPhase('ending') }, [audio])
 
   useEffect(() => {
     audio.prepare()
@@ -109,9 +107,9 @@ export default function App() {
         {!!assets?.failures.length && <p className="asset-notice scene-notice" role="status">Some scenery is unavailable. Skip intro to view the portfolio.</p>}
         <p className="sr-only" aria-live="polite">{phase !== 'loading' ? sceneStage === 'thought' ? experience.introThought.lines.join(' ') : `Introduction: ${sceneStage}.` : ''}</p>
       </section>}
-      {(phase === 'portfolio' || phase === 'ending') && <Portfolio audio={audio} onReplay={replay} reducedMotion={reducedMotion || fallback} fallback={fallback} ending={phase === 'ending'} onMovieEnd={endMovie} onMovieLoop={loopMovie} onMovieExit={finish} />}
+      {(phase === 'portfolio' || phase === 'ending') && <Portfolio audio={audio} onReplay={replay} reducedMotion={reducedMotion || fallback} fallback={fallback} ending={phase === 'ending'} onMovieEnd={endMovie} onMovieExit={finish} controlsHost={controlsHost} />}
       <LandingLensFlare target={landingLens} phase={phase} reducedMotion={reducedMotion || fallback} />
-      <SoundControls audio={audio} />
+      <PlaybackOverlay onHost={setControlsHost}><SoundControls audio={audio} /></PlaybackOverlay>
     </div>
   )
 }
