@@ -1,6 +1,6 @@
 import { Application, extend, useApplication } from '@pixi/react'
 import { Container, Sprite } from 'pixi.js'
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState, type RefObject } from 'react'
 import type { LoadedAssets } from '../assets/loadAssets'
 import { sceneLayers } from '../assets/manifest'
 import type { AudioManager } from '../audio/AudioManager'
@@ -29,6 +29,7 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure,
   const root = useRef<Container>(null)
   const character = useRef<Container>(null)
   const portrait = useRef<Sprite>(null)
+  const cloudWrap = useRef<Sprite>(null)
   const layers = useRef<Record<string, Sprite | null>>({})
   const camera = useRef<CameraState>({ x: experience.camera.startX, y: 0, zoom: experience.camera.startZoom })
 
@@ -37,7 +38,10 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure,
     positionCamera(root.current, camera.current, app.screen.width, app.screen.height)
     for (const layer of sceneLayers) {
       const sprite = layers.current[layer.id]
-      if (sprite) sprite.x = camera.current.x * (1 - layer.depth) * 0.8
+      if (sprite) {
+        sprite.x = camera.current.x * (1 - layer.depth) * 0.8 + (layer.id === 'clouds' ? camera.current.cloudDrift ?? 0 : 0)
+        if (layer.id === 'clouds' && cloudWrap.current) cloudWrap.current.x = sprite.x - experience.world.width
+      }
     }
     if (cloud.current && character.current) {
       positionThoughtCloud(cloud.current, root.current, character.current, app.screen.width)
@@ -85,9 +89,12 @@ function World({ assets, playing, audio, onComplete, onFade, onStage, onFailure,
   return (
     <pixiContainer ref={root} eventMode="none">
       {sceneLayers.filter((layer) => layer.id !== 'ridge').map((layer) => (
-        <pixiSprite key={layer.id} texture={assets.textures[layer.id]}
+        <Fragment key={layer.id}><pixiSprite texture={assets.textures[layer.id]}
           ref={(sprite) => { layers.current[layer.id] = sprite }}
           width={experience.world.width} height={experience.world.height} />
+          {layer.id === 'clouds' && <pixiSprite ref={cloudWrap} texture={assets.textures.clouds}
+            x={-experience.world.width} width={experience.world.width} height={experience.world.height} />}
+        </Fragment>
       ))}
       <pixiContainer ref={character} x={experience.character.x} y={experience.character.hiddenY} scale={experience.character.scale} alpha={0}>
         <pixiSprite ref={portrait} texture={assets.textures.neutral} anchor={{ x: 0.5, y: 1 }} />

@@ -42,7 +42,7 @@ export class SceneController {
     b.thought.element.dataset.state = 'hidden'
     b.thought.element.style.setProperty('--thought-bob', '0px')
     gsap.set(b.thought.element, { autoAlpha: 0, y: 10, scale: .975 })
-    Object.assign(b.camera, { x: camera.startX, y: 0, zoom: camera.startZoom, focus: 0 })
+    Object.assign(b.camera, { x: camera.startX, y: 0, zoom: camera.startZoom, focus: 0, cloudDrift: 0 })
     b.character.position.set(c.x, c.hiddenY)
     b.character.scale.set(c.scale)
     b.character.alpha = 0
@@ -50,6 +50,7 @@ export class SceneController {
     const timeline = gsap.timeline({ onUpdate: b.onFrame, onComplete: b.onComplete })
     this.timeline = timeline
     timeline
+      .to(b.camera, { cloudDrift: experience.atmosphere.cloudTravelPixels, duration, ease: 'none' }, 0)
       .call(() => b.onStage('mountains'), [], 0)
       .to(b.camera, { x: camera.endX, zoom: camera.endZoom, duration: t.approachAt, ease: 'sine.inOut' }, 0)
       .call(() => b.onStage('peeking'), [], t.peekAt)

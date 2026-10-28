@@ -1,6 +1,7 @@
 export const experience = {
   world: { width: 960, height: 540 },
   camera: { startX: -5, endX: 24, startZoom: 1.02, endZoom: 1.075 },
+  atmosphere: { cloudTravelPixels: 32, searchlightCycleSeconds: 20 },
   character: { x: 285, hiddenY: 540, peekY: 477, jumpY: 400, landY: 466, scale: 1.35 },
   timing: {
     duration: 11.8,
@@ -21,7 +22,7 @@ export const experience = {
     povAt: 10.8,
     fadeOut: 0.35,
   },
-  flight: { duration: 10.5, bayAt: 1.8, cityAt: 4.0, landingAt: 8.7 },
+  flight: { duration: 10.5, bayAt: 1.8, cityAt: 4.0, landingAt: 8.7, lensCatchSeconds: 0.8, lensFadeSeconds: 1.05, lensStrength: 0.62 },
   introThought: {
     lines: ['Oh, hey! You made it. 👋', 'Welcome to my space on the internet.', "Sit back, it's hands-free. I'll show you around!"],
     appearSeconds: 0.55, letterSeconds: 0.065 / 1.4, readSeconds: 2.5, fadeSeconds: 0.65,

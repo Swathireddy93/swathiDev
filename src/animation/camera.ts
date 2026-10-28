@@ -1,7 +1,7 @@
 import type { Container } from 'pixi.js'
 import { experience } from '../config/experience'
 
-export interface CameraState { x: number; y: number; zoom: number; focus?: number }
+export interface CameraState { x: number; y: number; zoom: number; focus?: number; cloudDrift?: number }
 
 /** Anchor the floating glass dialogue to the same transformed pixel character. */
 export function positionThoughtCloud(bubble: HTMLDivElement, root: Container, character: Container, width: number) {

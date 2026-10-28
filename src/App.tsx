@@ -10,6 +10,7 @@ import { Portfolio } from './components/Portfolio'
 import { SceneBoundary } from './components/SceneBoundary'
 import { CityFlight } from './scenes/CityFlight'
 import { TelevisionSceneReveal } from './components/TelevisionSceneReveal'
+import { LandingLensFlare } from './components/LandingLensFlare'
 import { experience } from './config/experience'
 
 const MountainWorld = lazy(() => import('./scenes/MountainWorld'))
@@ -33,6 +34,7 @@ export default function App() {
   const [introCycle, setIntroCycle] = useState(0)
   const assetsReady = useRef(false)
   const firstFrameReady = useRef(false)
+  const landingLens = useRef<HTMLDivElement>(null)
   const finish = useCallback(() => {
     setPhase('portfolio')
     requestAnimationFrame(() => document.getElementById('portfolio')?.focus({ preventScroll: true }))
@@ -100,7 +102,7 @@ export default function App() {
               onComplete={startFlight} onFade={onFade} onStage={setSceneStage} onFailure={onFailure} onRendered={onRendered} />
           </Suspense>
         </SceneBoundary>}
-        {phase === 'flight' && <CityFlight onStage={setSceneStage} onComplete={land} onFailure={onFailure} />}
+        {phase === 'flight' && <CityFlight onStage={setSceneStage} onComplete={land} onFailure={onFailure} lens={landingLens} />}
         <div className="intro-vignette" aria-hidden="true" />
         {phase === 'loading' && <LoadingScreen progress={progress} />}
         {phase === 'playing' && <TelevisionSceneReveal />}
@@ -108,6 +110,7 @@ export default function App() {
         <p className="sr-only" aria-live="polite">{phase !== 'loading' ? sceneStage === 'thought' ? experience.introThought.lines.join(' ') : `Introduction: ${sceneStage}.` : ''}</p>
       </section>}
       {(phase === 'portfolio' || phase === 'ending') && <Portfolio audio={audio} onReplay={replay} reducedMotion={reducedMotion || fallback} fallback={fallback} ending={phase === 'ending'} onMovieEnd={endMovie} onMovieLoop={loopMovie} onMovieExit={finish} />}
+      <LandingLensFlare target={landingLens} phase={phase} reducedMotion={reducedMotion || fallback} />
       <SoundControls audio={audio} />
     </div>
   )

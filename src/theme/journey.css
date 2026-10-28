@@ -1,5 +1,8 @@
 .city-flight, .city-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .city-canvas { display: block; object-fit: cover; image-rendering: pixelated; }
+.landing-lens-flare { position: fixed; inset: 0; z-index: 24; pointer-events: none; opacity: 0; visibility: hidden; transform-origin: 52% 43%; background: radial-gradient(ellipse at 52% 43%, #fff 0%, #f1f2f3d9 8%, #f1f2f382 23%, #f1f2f324 45%, transparent 68%); }
+.landing-lens-flare::before { content: ''; position: absolute; top: 43%; left: 24%; right: 20%; height: 1px; background: linear-gradient(90deg, transparent, #fff9, transparent); box-shadow: 0 0 14px 2px #ffffff26; }
+@media (prefers-reduced-motion: reduce) { .landing-lens-flare { display: none; } }
 .scene-notice { position: absolute; top: 100px; left: 24px; right: 24px; padding: 12px; background: var(--forest); }
 .landing-hero { min-height: calc(100svh - var(--header-height)); }
 .landing-hero .hero-shade { background: linear-gradient(180deg, #22222233, #2222220d 48%, #222222cc); }
@@ -34,7 +37,7 @@
   }
 }
 .landing-copy .hero-glass .hero-description { color: var(--cream); }
-.landing-copy.hero-copy h1 { max-width: 900px; margin: 0 auto 18px; font-size: clamp(18px, 3.2vw, 46px); white-space: nowrap; line-height: 1.05; letter-spacing: .015em; }
+.landing-copy.hero-copy h1 { max-width: 900px; margin: 0 auto 18px; font-size: clamp(18px, 2.6vw, 37px); color: #e8dfcbc7; text-shadow: 0 1px 2px #ffffff14; white-space: nowrap; line-height: 1.05; letter-spacing: .015em; }
 .landing-copy .hero-role { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; font-weight: 600; letter-spacing: .015em; font-size: 14px; margin-bottom: 14px; }
 .landing-copy .hero-description { max-width: 600px; margin: 0 auto 25px; }
 .landing-copy .hero-actions { justify-content: center; }
@@ -78,7 +81,7 @@
 @media (max-width: 700px) {
   .landing-copy { padding-top: 55px; padding-bottom: 36px; }
   .hero-glass { padding: 38px 20px; }
-  .landing-copy.hero-copy h1 { font-size: clamp(13px, 4.15vw, 29px); white-space: nowrap; }
+  .landing-copy.hero-copy h1 { font-size: clamp(13px, 3.65vw, 26px); white-space: nowrap; }
   .landing-copy .hero-role { font-size: 12px; }
   .landing-copy .hero-description { max-width: 320px; font-size: 12px; }
   .landing-copy .hero-actions { gap: 20px; flex-wrap: wrap; }
@@ -515,28 +518,24 @@ html.is-story-playing { scroll-behavior: auto; }
 @keyframes photography-shutter { 0% { opacity: 0; } 16% { opacity: 1; } 44% { opacity: .7; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .photography-flash { display: none; } }
 
-/* Frosted modern glass with restrained stepped corners and a pixel pointer. */
-.intro-thought-cloud { --dialogue-edge: polygon(12px 0, calc(100% - 12px) 0, calc(100% - 12px) 5px, calc(100% - 5px) 5px, calc(100% - 5px) 12px, 100% 12px, 100% calc(100% - 12px), calc(100% - 5px) calc(100% - 12px), calc(100% - 5px) calc(100% - 5px), calc(100% - 12px) calc(100% - 5px), calc(100% - 12px) 100%, 12px 100%, 12px calc(100% - 5px), 5px calc(100% - 5px), 5px calc(100% - 12px), 0 calc(100% - 12px), 0 12px, 5px 12px, 5px 5px, 12px 5px); position: absolute; z-index: 2; width: min(350px, calc(100% - 32px)); color: var(--cream); opacity: 0; visibility: hidden; pointer-events: none; transform-origin: 30% 100%; }
+/* A scalloped, translucent thought cloud with the portfolio's pixel lettering. */
+.intro-thought-cloud { position: absolute; z-index: 2; container-type: inline-size; width: min(350px, calc(100% - 32px)); color: #f3eddfd9; opacity: 0; visibility: hidden; pointer-events: none; transform-origin: 30% 100%; }
+.dialogue-outline { position: absolute; }
 .thought-float { position: relative; width: 100%; transform: translate3d(0, var(--thought-bob, 0px), 0); }
-.dialogue-frame { position: relative; padding: 18px 20px; border-radius: 10px; box-shadow: 0 8px 24px #0b17173d, 0 2px 5px #0b171722; }
+.dialogue-frame { position: relative; padding: 36px 22px 32px; }
 .dialogue-frame::before, .dialogue-glass { content: ''; position: absolute; inset: 0; clip-path: var(--dialogue-edge); }
-.dialogue-frame::before { background: linear-gradient(135deg, #e8dfcb99, #e8dfcb33 40%, #b48b6255 75%, #e8dfcb66); }
-.dialogue-glass { inset: 1px; background: #172522ed; }
+.dialogue-frame::before { background: linear-gradient(145deg, #f6efdd88, #e8dfcb18 48%, #e8dfcb55); }
+.dialogue-glass { inset: 1px; background: #243e38ed; box-shadow: inset 0 14px 24px #f6efdd12; }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .dialogue-glass { background: linear-gradient(145deg, #172522ad, #456c687d 65%, #172522a8); -webkit-backdrop-filter: blur(10px) saturate(.8); backdrop-filter: blur(10px) saturate(.8); }
+  .dialogue-glass { background: linear-gradient(145deg, #456c6885, #1725228f 70%, #456c6866); -webkit-backdrop-filter: blur(10px) saturate(.8); backdrop-filter: blur(10px) saturate(.8); }
 }
-.dialogue-highlight { position: absolute; top: 1px; left: 18px; right: 18px; height: 1px; background: linear-gradient(90deg, transparent, #e8dfcb66 20%, #e8dfcb22 80%, transparent); }
-.dialogue-pixels { position: absolute; top: 10px; right: 13px; display: flex; gap: 3px; align-items: flex-end; }
-.dialogue-pixels i { display: block; width: 2px; height: 2px; background: #e8dfcb55; }
-.dialogue-pixels i:nth-child(2) { height: 3px; background: #b48b6266; }
-.thought-copy { position: relative; display: block; min-height: 4.95em; font: 450 clamp(11px, 3vw, 13px) / 1.65 var(--body); white-space: pre-wrap; letter-spacing: 0; text-align: left; text-shadow: 0 1px 2px #0b171766; }
-.thought-copy::first-line { font-weight: 600; color: #f6efdd; }
-.thought-pointer { position: absolute; top: calc(100% - 1px); left: calc(var(--thought-tail, 30px) - 8px); width: 18px; height: 18px; background: #e8dfcb55; clip-path: polygon(0 0, 100% 0, 100% 6px, 12px 6px, 12px 12px, 6px 12px, 6px 100%, 0 100%); }
-.thought-pointer i { position: absolute; inset: 0 1px 1px; clip-path: inherit; background: #456c68c9; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
-.thought-cursor { display: inline-block; width: 3px; height: .8em; margin-left: 4px; vertical-align: -.03em; background: #e8dfcbb3; animation: thought-cursor .75s steps(1) infinite; }
+.thought-copy { position: relative; display: block; min-height: 4.65em; font: 400 clamp(11px, 3.85cqw, 14px) / 1.55 var(--pixel); white-space: pre-wrap; letter-spacing: 0; text-align: center; text-shadow: 0 1px 3px #0b171799; }
+.thought-pointer { position: absolute; top: calc(100% - 7px); left: calc(var(--thought-tail, 30px) - 6px); width: 12px; height: 10px; border: 1px solid #e8dfcb55; border-radius: 50%; background: #456c6873; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.thought-pointer i { position: absolute; top: 14px; left: 3px; width: 6px; height: 5px; border-radius: 50%; border: 1px solid #e8dfcb44; background: #456c6866; }
+.thought-cursor { display: inline-block; width: 3px; height: .8em; margin-left: 3px; vertical-align: -.03em; background: #e8dfcb99; animation: thought-cursor .75s steps(1) infinite; }
 .intro-thought-cloud:not([data-state="typing"]) .thought-cursor { visibility: hidden; }
 @keyframes thought-cursor { 50% { opacity: 0; } }
-@media (max-width: 380px) { .dialogue-frame { padding: 16px; } }
+@media (max-width: 380px) { .dialogue-frame { padding-inline: 16px; } }
 @media (prefers-reduced-motion: reduce) { .thought-float { transform: none; } .thought-cursor { animation: none; } }
 
 /* A quiet farewell between complete movie cycles; controls remain available. */

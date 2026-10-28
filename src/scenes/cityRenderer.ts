@@ -1,4 +1,5 @@
 /** A deterministic pixel-art city with perspective projection, not a 3D engine. */
+import { experience } from '../config/experience'
 export interface FlightCamera { progress: number }
 const palette = { forest: '#0d0e10', teal: '#191b1e', plum: '#42464b', amber: '#bfc4ca', cream: '#f1f2f3' }
 interface Building { x: number; z: number; w: number; d: number; h: number; seed: number; landmark?: boolean }
@@ -10,8 +11,10 @@ const buildings: Building[] = Array.from({ length: 60 }, (_, index) => {
 })
 buildings.push({ x: 8, z: 505, w: 18, d: 18, h: 108, seed: 80, landmark: true })
 buildings.push({ x: -25, z: 460, w: 14, d: 14, h: 79, seed: 81, landmark: true })
+// Four distinct rooftops at different heights and depths, split across the city.
+const searchlightBuildings = new Set([42, 47, 55, 80])
 
-export function drawCity(ctx: CanvasRenderingContext2D, progress: number) {
+export function drawCity(ctx: CanvasRenderingContext2D, progress: number, lightSeconds = 0, lensAlignment = 0) {
   const w = 480, h = 270
   const p = Math.max(0, Math.min(1, progress))
   ctx.imageSmoothingEnabled = false
@@ -83,6 +86,27 @@ export function drawCity(ctx: CanvasRenderingContext2D, progress: number) {
     if (z - cameraZ < 12) continue
     const near = 230 / (z - cameraZ)
     const left = x - width / 2, right = x + width / 2
+    // A few roof-mounted searchlights sweep slowly. Drawing in depth order lets
+    // nearer buildings naturally hide the beams; the low-resolution canvas
+    // keeps their edges in the same pixel grid as the skyline.
+    if (searchlightBuildings.has(seed)) {
+      const [sx, sy] = project(x, height + (building.landmark ? 10 : 1), z + d / 2)
+      if (sx > -40 && sx < w + 40 && sy > -10 && sy < h) {
+        const phase = lightSeconds / experience.atmosphere.searchlightCycleSeconds * Math.PI * 2 + seed
+        const reach = Math.min(110, Math.max(32, 70 * near))
+        // On arrival, one beam turns toward the camera to motivate the lens glow.
+        const aim = seed === 80 ? Math.max(0, Math.min(1, lensAlignment)) : 0
+        const sweepX = sx + Math.sin(phase) * reach * .55
+        const tipX = sweepX + (w * .52 - sweepX) * aim
+        const tipY = sy - reach + (h * .43 - (sy - reach)) * aim
+        const spread = Math.max(6, Math.min(18, reach * .16)) + aim * 26
+        const glow = ctx.createLinearGradient(sx, sy, tipX, tipY)
+        glow.addColorStop(0, '#f1f2f32e'); glow.addColorStop(.5, '#f1f2f314'); glow.addColorStop(1, '#f1f2f300')
+        ctx.fillStyle = glow; ctx.beginPath(); ctx.moveTo(sx - 1, sy); ctx.lineTo(tipX - spread, tipY)
+        ctx.lineTo(tipX + spread, tipY); ctx.lineTo(sx + 1, sy); ctx.closePath(); ctx.fill()
+        ctx.fillStyle = '#f1f2f3b3'; ctx.fillRect(sx - 1, sy, 2, 1)
+      }
+    }
     const front = [project(left, 0, z), project(right, 0, z), project(right, height, z), project(left, height, z)]
     const side = x < 0 ? [project(right, 0, z), project(right, 0, z + d), project(right, height, z + d), project(right, height, z)]
       : [project(left, 0, z), project(left, 0, z + d), project(left, height, z + d), project(left, height, z)]
